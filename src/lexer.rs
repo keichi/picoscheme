@@ -1,7 +1,7 @@
 use std::iter;
 use std::str;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Token {
     Identifier(String),
     Boolean(bool),
@@ -175,3 +175,42 @@ impl<'a> Lexer<'a> {
     }
 }
 
+#[test]
+fn test_lex_identifier() {
+    let mut lexer = Lexer::new("foo bar-baz qux?");
+    assert_eq!(Token::Identifier("foo".to_string()), lexer.next().unwrap());
+    assert_eq!(Token::Identifier("bar-baz".to_string()), lexer.next().unwrap());
+    assert_eq!(Token::Identifier("qux?".to_string()), lexer.next().unwrap());
+}
+
+#[test]
+fn test_lex_boolean() {
+    let mut lexer = Lexer::new("#t #f");
+
+    assert_eq!(Token::Boolean(true), lexer.next().unwrap());
+    assert_eq!(Token::Boolean(false), lexer.next().unwrap());
+}
+
+#[test]
+fn test_lex_integer() {
+    let mut lexer = Lexer::new("123");
+    assert_eq!(Token::Integer(123), lexer.next().unwrap());
+}
+
+#[test]
+fn test_lex_string() {
+    let mut lexer = Lexer::new("\"test\"");
+    assert_eq!(Token::String("test".to_string()), lexer.next().unwrap());
+}
+
+#[test]
+fn test_lex_miscs() {
+    let mut lexer = Lexer::new("()'`,.");
+
+    assert_eq!(Token::OpenParen, lexer.next().unwrap());
+    assert_eq!(Token::CloseParen, lexer.next().unwrap());
+    assert_eq!(Token::Quote, lexer.next().unwrap());
+    assert_eq!(Token::BackQuote, lexer.next().unwrap());
+    assert_eq!(Token::Comma, lexer.next().unwrap());
+    assert_eq!(Token::Dot, lexer.next().unwrap());
+}

@@ -1,4 +1,5 @@
 mod lexer;
+mod parser;
 
 fn main() {
     // let lexer = Lexer::new("((123 456) '(#t #f) \"foo\" \"\" test)");

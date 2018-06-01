@@ -12,6 +12,7 @@ pub enum Token {
     Quote,
     BackQuote,
     Comma,
+    CommaAt,
     Dot
 }
 
@@ -44,7 +45,14 @@ impl<'a> iter::Iterator for Lexer<'a> {
             },
             Some(',') => {
                 self.iter.next();
-                Some(Token::Comma)
+
+                match self.iter.peek().cloned() {
+                    Some('@') => {
+                        self.iter.next();
+                        Some(Token::CommaAt)
+                    },
+                    _ => Some(Token::Comma)
+                }
             },
             Some('.') => {
                 self.iter.next();
@@ -205,12 +213,13 @@ fn test_lex_string() {
 
 #[test]
 fn test_lex_miscs() {
-    let mut lexer = Lexer::new("()'`,.");
+    let mut lexer = Lexer::new("()'`,,@.");
 
     assert_eq!(Token::OpenParen, lexer.next().unwrap());
     assert_eq!(Token::CloseParen, lexer.next().unwrap());
     assert_eq!(Token::Quote, lexer.next().unwrap());
     assert_eq!(Token::BackQuote, lexer.next().unwrap());
     assert_eq!(Token::Comma, lexer.next().unwrap());
+    assert_eq!(Token::CommaAt, lexer.next().unwrap());
     assert_eq!(Token::Dot, lexer.next().unwrap());
 }

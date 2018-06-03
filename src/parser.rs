@@ -23,18 +23,18 @@ pub enum Value {
 //          | , <datum>
 //          | ,@ <datum>
 
-pub struct Parser<'a> {
-    tokens: iter::Peekable<lexer::Lexer<'a>>
+pub struct Parser<T: iter::Iterator<Item=lexer::Token>> {
+    tokens: iter::Peekable<T>
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(lexer: lexer::Lexer<'a>) -> Self {
+impl<T: iter::Iterator<Item=lexer::Token>> Parser<T> {
+    pub fn new(lexer: T) -> Self {
         Parser {
             tokens: lexer.peekable()
         }
     }
 
-    pub fn parse_list(&mut self) -> Result<Value, &str> {
+    fn parse_list(&mut self) -> Result<Value, &str> {
         match self.tokens.peek().cloned() {
             Some(lexer::Token::CloseParen) => {
                 self.tokens.next();
@@ -116,4 +116,12 @@ impl<'a> Parser<'a> {
             _ => Err("Unexepcted token")
         }
     }
+}
+
+
+#[test]
+fn test_parse_literal() {
+    let tokens = vec![lexer::Token::Integer(123)];
+    let mut parser = Parser::new(tokens.into_iter());
+    assert_eq!(Value::Integer(123), parser.parse().unwrap());
 }

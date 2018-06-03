@@ -2,10 +2,8 @@ mod lexer;
 mod parser;
 
 fn main() {
-    // let lexer = Lexer::new("((123 456) '(#t #f) \"foo\" \"\" test)");
-    let lexer = lexer::Lexer::new("(list->hoge 123 456 'foo (1 2 . 3))");
+    let lexer = lexer::Lexer::new("((lambda (x) x) 1)");
+    let mut parser = parser::Parser::new(lexer);
 
-    for tok in lexer {
-        println!("tok: {:?}", tok);
-    }
+    println!("{:?}", parser.parse());
 }

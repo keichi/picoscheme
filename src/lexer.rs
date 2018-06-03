@@ -186,9 +186,9 @@ impl<'a> Lexer<'a> {
 #[test]
 fn test_lex_identifier() {
     let mut lexer = Lexer::new("foo bar-baz qux?");
-    assert_eq!(Token::Identifier("foo".to_string()), lexer.next().unwrap());
-    assert_eq!(Token::Identifier("bar-baz".to_string()), lexer.next().unwrap());
-    assert_eq!(Token::Identifier("qux?".to_string()), lexer.next().unwrap());
+    assert_eq!(Token::Identifier("foo".to_owned()), lexer.next().unwrap());
+    assert_eq!(Token::Identifier("bar-baz".to_owned()), lexer.next().unwrap());
+    assert_eq!(Token::Identifier("qux?".to_owned()), lexer.next().unwrap());
 }
 
 #[test]
@@ -208,7 +208,7 @@ fn test_lex_integer() {
 #[test]
 fn test_lex_string() {
     let mut lexer = Lexer::new("\"test\"");
-    assert_eq!(Token::String("test".to_string()), lexer.next().unwrap());
+    assert_eq!(Token::String("test".to_owned()), lexer.next().unwrap());
 }
 
 #[test]

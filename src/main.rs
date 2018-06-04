@@ -57,17 +57,17 @@ fn cons(args: &[Value]) -> Result<Value, String> {
     }
 
     let car = eval(&args[0])?;
-    let mut cdr = eval(&args[1])?;
+    let cdr = eval(&args[1])?;
 
-    match &mut cdr {
-        &mut Value::List(ref mut vs) => {
+    match &cdr {
+        &Value::List(ref vs) => {
             let mut list = vec![car];
-            list.append(vs);
+            list.extend_from_slice(&vs);
             return Ok(Value::List(list));
         },
-        &mut Value::DottedList(ref mut vs) => {
+        &Value::DottedList(ref vs) => {
             let mut list = vec![car];
-            list.append(vs);
+            list.extend_from_slice(&vs);
             return Ok(Value::DottedList(list));
         },
         v => Ok(Value::DottedList(vec![car, v.clone()]))

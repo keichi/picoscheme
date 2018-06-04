@@ -2,7 +2,7 @@ use std::iter::{Iterator,Peekable};
 
 use lexer::Token;
 
-#[derive(Clone,Debug,PartialEq)]
+#[derive(Debug,PartialEq)]
 pub enum Value {
     Pair(Box<Value>, Box<Value>),
     Nil,
@@ -34,7 +34,7 @@ impl<T: Iterator<Item=Token>> Parser<T> {
         }
     }
 
-    fn parse_list(&mut self) -> Result<Value, &str> {
+    fn parse_list(&mut self) -> Result<Value, String> {
         match self.tokens.peek().cloned() {
             Some(Token::CloseParen) => {
                 self.tokens.next();
@@ -42,29 +42,22 @@ impl<T: Iterator<Item=Token>> Parser<T> {
             },
             Some(Token::Dot) => {
                 self.tokens.next();
-
-                let cdr = self.parse().unwrap();
-
-                Ok(cdr)
+                Ok(self.parse()?)
             },
             Some(_) => {
-                let car = Box::new(self.parse().unwrap());
-                let cdr = Box::new(self.parse_list().unwrap());
-
+                let car = Box::new(self.parse()?);
+                let cdr = Box::new(self.parse_list()?);
                 Ok(Value::Pair(car, cdr))
             },
-            None => Err("Unexepcted end of list")
+            None => Err("Unexepcted end of list".to_owned())
         }
     }
 
-    pub fn parse(&mut self) -> Result<Value, &str> {
-        let token = self.tokens.peek().cloned();
+    pub fn parse(&mut self) -> Result<Value, String> {
+        let token = self.tokens.peek().cloned()
+                        .ok_or("Unexected end of input")?;
 
-        if token.is_none() {
-            return Err("Unexpected end of input")
-        }
-
-        match token.ok_or("Unexpected end of input").unwrap() {
+        match token {
             Token::Boolean(b) => {
                 self.tokens.next();
                 Ok(Value::Boolean(b))
@@ -121,7 +114,7 @@ impl<T: Iterator<Item=Token>> Parser<T> {
                     )
                 )
             }
-            _ => Err("Unexepcted token")
+            _ => Err("Unexepcted token".to_owned())
         }
     }
 }
@@ -129,10 +122,25 @@ impl<T: Iterator<Item=Token>> Parser<T> {
 
 #[test]
 fn test_parse_literal() {
+    let tokens = vec![Token::Boolean(true)];
+    let mut parser = Parser::new(tokens.into_iter());
+
+    assert_eq!(Value::Boolean(true), parser.parse().unwrap());
+
+    let tokens = vec![Token::Identifier("a".to_owned())];
+    let mut parser = Parser::new(tokens.into_iter());
+
+    assert_eq!(Value::Symbol("a".to_owned()), parser.parse().unwrap());
+
     let tokens = vec![Token::Integer(123)];
     let mut parser = Parser::new(tokens.into_iter());
 
     assert_eq!(Value::Integer(123), parser.parse().unwrap());
+
+    let tokens = vec![Token::String("b".to_owned())];
+    let mut parser = Parser::new(tokens.into_iter());
+
+    assert_eq!(Value::String("b".to_owned()), parser.parse().unwrap());
 }
 
 #[test]

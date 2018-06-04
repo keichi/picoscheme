@@ -1,7 +1,7 @@
 use std::iter;
 use std::str;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone,Debug,PartialEq)]
 pub enum Token {
     Identifier(String),
     Boolean(bool),

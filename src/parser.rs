@@ -18,27 +18,27 @@ impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Value::List(vs) => {
-                try!(write!(f, "("));
+                write!(f, "(")?;
                 for (i, v) in vs.iter().enumerate() {
                     if i >= 1 {
-                        try!(write!(f, " "));
+                        write!(f, " ")?;
                     }
-                    try!(write!(f, "{}", v));
+                    write!(f, "{}", v)?;
                 }
-                try!(write!(f, ")"));
+                write!(f, ")")?;
                 return Ok(());
             },
             Value::DottedList(vs) => {
-                try!(write!(f, "("));
+                write!(f, "(")?;
                 for (i, v) in vs.iter().enumerate() {
                     if i == vs.len() - 1 {
-                        try!(write!(f, " . "));
+                        write!(f, " . ")?;
                     } else if i >= 1 {
-                        try!(write!(f, " "));
+                        write!(f, " ")?;
                     }
-                    try!(write!(f, "{}", v));
+                    write!(f, "{}", v)?;
                 }
-                try!(write!(f, ")"));
+                write!(f, ")")?;
                 return Ok(());
             },
             Value::Boolean(true) => write!(f, "#t"),

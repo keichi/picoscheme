@@ -1,8 +1,8 @@
-use std::iter;
+use std::iter::{Iterator,Peekable};
 
-use lexer;
+use lexer::Token;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone,Debug,PartialEq)]
 pub enum Value {
     Pair(Box<Value>, Box<Value>),
     Nil,
@@ -23,11 +23,11 @@ pub enum Value {
 //          | , <datum>
 //          | ,@ <datum>
 
-pub struct Parser<T: iter::Iterator<Item=lexer::Token>> {
-    tokens: iter::Peekable<T>
+pub struct Parser<T: Iterator<Item=Token>> {
+    tokens: Peekable<T>
 }
 
-impl<T: iter::Iterator<Item=lexer::Token>> Parser<T> {
+impl<T: Iterator<Item=Token>> Parser<T> {
     pub fn new(lexer: T) -> Self {
         Parser {
             tokens: lexer.peekable()
@@ -36,20 +36,24 @@ impl<T: iter::Iterator<Item=lexer::Token>> Parser<T> {
 
     fn parse_list(&mut self) -> Result<Value, &str> {
         match self.tokens.peek().cloned() {
-            Some(lexer::Token::CloseParen) => {
+            Some(Token::CloseParen) => {
                 self.tokens.next();
                 Ok(Value::Nil)
             },
             Some(Token::Dot) => {
                 self.tokens.next();
-                Ok(self.parse().unwrap())
+
+                let cdr = self.parse().unwrap();
+
+                Ok(cdr)
             },
-            _ => {
+            Some(_) => {
                 let car = Box::new(self.parse().unwrap());
                 let cdr = Box::new(self.parse_list().unwrap());
 
                 Ok(Value::Pair(car, cdr))
-            }
+            },
+            None => Err("Unexepcted end of list")
         }
     }
 
@@ -60,28 +64,28 @@ impl<T: iter::Iterator<Item=lexer::Token>> Parser<T> {
             return Err("Unexpected end of input")
         }
 
-        match token.unwrap() {
-            lexer::Token::Boolean(b) => {
+        match token.ok_or("Unexpected end of input").unwrap() {
+            Token::Boolean(b) => {
                 self.tokens.next();
                 Ok(Value::Boolean(b))
             },
-            lexer::Token::Integer(i) => {
+            Token::Integer(i) => {
                 self.tokens.next();
                 Ok(Value::Integer(i))
             },
-            lexer::Token::String(s) => {
+            Token::String(s) => {
                 self.tokens.next();
                 Ok(Value::String(s))
             },
-            lexer::Token::Identifier(s) => {
+            Token::Identifier(s) => {
                 self.tokens.next();
                 Ok(Value::Symbol(s))
             },
-            lexer::Token::OpenParen => {
+            Token::OpenParen => {
                 self.tokens.next();
                 self.parse_list()
             },
-            lexer::Token::Quote => {
+            Token::Quote => {
                 self.tokens.next();
                 self.parse().map(|v|
                     Value::Pair(
@@ -90,7 +94,7 @@ impl<T: iter::Iterator<Item=lexer::Token>> Parser<T> {
                     )
                 )
             },
-            lexer::Token::BackQuote => {
+            Token::BackQuote => {
                 self.tokens.next();
                 self.parse().map(|v|
                     Value::Pair(
@@ -99,7 +103,7 @@ impl<T: iter::Iterator<Item=lexer::Token>> Parser<T> {
                     )
                 )
             },
-            lexer::Token::Comma => {
+            Token::Comma => {
                 self.tokens.next();
                 self.parse().map(|v|
                     Value::Pair(
@@ -108,7 +112,7 @@ impl<T: iter::Iterator<Item=lexer::Token>> Parser<T> {
                     )
                 )
             },
-            lexer::Token::CommaAt => {
+            Token::CommaAt => {
                 self.tokens.next();
                 self.parse().map(|v|
                     Value::Pair(
@@ -125,8 +129,9 @@ impl<T: iter::Iterator<Item=lexer::Token>> Parser<T> {
 
 #[test]
 fn test_parse_literal() {
-    let tokens = vec![lexer::Token::Integer(123)];
+    let tokens = vec![Token::Integer(123)];
     let mut parser = Parser::new(tokens.into_iter());
+
     assert_eq!(Value::Integer(123), parser.parse().unwrap());
 }
 

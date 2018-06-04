@@ -2,7 +2,7 @@ mod lexer;
 mod parser;
 
 use lexer::Lexer;
-use parser::Parser;
+use parser::{Parser, Value};
 
 fn main() {
     let lexer = Lexer::new("((lambda (x) x) 1)");

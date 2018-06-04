@@ -1,10 +1,10 @@
 use std::fmt;
-use std::iter::{Iterator,Peekable};
+use std::iter::{Iterator, Peekable};
 use std::vec::Vec;
 
 use lexer::Token;
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Value {
     List(Vec<Value>),
     DottedList(Vec<Value>),

@@ -131,6 +131,32 @@ fn test_parse_literal() {
 }
 
 #[test]
+fn test_proper_list() {
+    let tokens = vec![
+        Token::OpenParen,
+        Token::String("a".to_owned()),
+        Token::Integer(123),
+        Token::Identifier("b".to_owned()),
+        Token::CloseParen
+    ];
+    let mut parser = Parser::new(tokens.into_iter());
+
+    assert_eq!(
+        Value::Pair(
+            Box::new(Value::String("a".to_owned())),
+            Box::new(Value::Pair(
+                Box::new(Value::Integer(123)),
+                Box::new(Value::Pair(
+                    Box::new(Value::Symbol("b".to_owned())),
+                    Box::new(Value::Nil)
+                )),
+            ))
+        ),
+        parser.parse().unwrap()
+    );
+}
+
+#[test]
 fn test_improper_list() {
     let tokens = vec![
         Token::OpenParen,

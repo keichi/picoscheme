@@ -1,3 +1,4 @@
+use std::fmt;
 use std::iter::{Iterator,Peekable};
 use std::vec::Vec;
 
@@ -11,6 +12,42 @@ pub enum Value {
     Symbol(String),
     Integer(i64),
     String(String)
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Value::List(vs) => {
+                try!(write!(f, "("));
+                for (i, v) in vs.iter().enumerate() {
+                    if i >= 1 {
+                        try!(write!(f, " "));
+                    }
+                    try!(write!(f, "{}", v));
+                }
+                try!(write!(f, ")"));
+                return Ok(());
+            },
+            Value::DottedList(vs) => {
+                try!(write!(f, "("));
+                for (i, v) in vs.iter().enumerate() {
+                    if i == vs.len() - 1 {
+                        try!(write!(f, " . "));
+                    } else if i >= 1 {
+                        try!(write!(f, " "));
+                    }
+                    try!(write!(f, "{}", v));
+                }
+                try!(write!(f, ")"));
+                return Ok(());
+            },
+            Value::Boolean(true) => write!(f, "#t"),
+            Value::Boolean(false) => write!(f, "#f"),
+            Value::Symbol(s) => write!(f, "{}", s),
+            Value::Integer(i) => write!(f, "{}", i),
+            Value::String(s) => write!(f, "\"{}\"", s)
+        }
+    }
 }
 
 // <datum> -> <boolean>

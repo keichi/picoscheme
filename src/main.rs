@@ -9,7 +9,7 @@ fn add(args: &[Value]) -> Result<Value, String> {
     for v in args.into_iter() {
         match eval(v)? {
             Value::Integer(i) => result += i,
-            _ => return Err("Cannot add non-integer".to_owned())
+            v => return Err(format!("Cannot add non-integer {}", v))
         }
     }
 
@@ -54,8 +54,8 @@ fn main() {
     match parsed {
         Ok(v) => match eval(&v) {
             Ok(v) => println!("{}", v),
-            Err(e) => println!("{:?}", e)
+            Err(e) => println!("Error: {}", e)
         },
-        Err(e) => println!("{:?}", e)
+        Err(e) => println!("Error {}", e)
     }
 }

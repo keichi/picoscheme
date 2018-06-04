@@ -4,7 +4,7 @@ use std::vec::Vec;
 
 use lexer::Token;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     List(Vec<Value>),
     DottedList(Vec<Value>),
@@ -17,7 +17,7 @@ pub enum Value {
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Value::List(vs) => {
+            &Value::List(ref vs) => {
                 write!(f, "(")?;
                 for (i, v) in vs.iter().enumerate() {
                     if i >= 1 {
@@ -28,7 +28,7 @@ impl fmt::Display for Value {
                 write!(f, ")")?;
                 return Ok(());
             },
-            Value::DottedList(vs) => {
+            &Value::DottedList(ref vs) => {
                 write!(f, "(")?;
                 for (i, v) in vs.iter().enumerate() {
                     if i == vs.len() - 1 {
@@ -41,11 +41,11 @@ impl fmt::Display for Value {
                 write!(f, ")")?;
                 return Ok(());
             },
-            Value::Boolean(true) => write!(f, "#t"),
-            Value::Boolean(false) => write!(f, "#f"),
-            Value::Symbol(s) => write!(f, "{}", s),
-            Value::Integer(i) => write!(f, "{}", i),
-            Value::String(s) => write!(f, "\"{}\"", s)
+            &Value::Boolean(true) => write!(f, "#t"),
+            &Value::Boolean(false) => write!(f, "#f"),
+            &Value::Symbol(ref s) => write!(f, "{}", s),
+            &Value::Integer(i) => write!(f, "{}", i),
+            &Value::String(ref s) => write!(f, "\"{}\"", s)
         }
     }
 }
@@ -84,6 +84,10 @@ impl<T: Iterator<Item=Token>> Parser<T> {
                     return Ok(Value::List(items));
                 },
                 Some(Token::Dot) => {
+                    if items.is_empty() {
+                        return Err("Unexpected dot".to_owned())
+                    }
+
                     self.tokens.next();
                     items.push(self.parse()?);
                     return Ok(Value::DottedList(items));

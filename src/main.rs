@@ -100,6 +100,97 @@ fn eval(value: &Value) -> Result<Value, String> {
     }
 }
 
+fn eval_str(sexp: &str) -> String {
+    let lexer = Lexer::new(sexp);
+    let mut parser = Parser::new(lexer);
+    let parsed = parser.parse().expect("Failed to parse");
+    let result = eval(&parsed).expect("Failed to evaluate");
+
+    format!("{}", result)
+}
+
+#[test]
+fn test_cons() {
+    assert_eq!(eval_str("(cons 'a '())"), "(a)");
+    assert_eq!(eval_str("(cons '(a) '(b c d))"), "((a) b c d)");
+    assert_eq!(eval_str("(cons \"a\" '(b c))"), "(\"a\" b c)");
+    assert_eq!(eval_str("(cons 'a 3)"), "(a . 3)");
+    assert_eq!(eval_str("(cons '(a b) 'c)"), "((a b) . c)");
+
+    assert_eq!(
+        eval(&Value::List(vec![
+            Value::Symbol("cons".to_owned()),
+            Value::List(vec![
+                Value::Symbol("quote".to_owned()),
+                Value::Symbol("a".to_owned())
+            ]),
+            Value::List(Vec::new())
+        ])).unwrap(),
+        Value::List(vec![
+            Value::Symbol("a".to_owned())
+        ])
+    );
+
+    assert_eq!(
+        eval(&Value::List(vec![
+            Value::Symbol("cons".to_owned()),
+            Value::List(vec![
+                Value::Symbol("quote".to_owned()),
+                Value::List(vec![Value::Symbol("a".to_owned())])
+            ]),
+            Value::List(vec![
+                Value::Symbol("quote".to_owned()),
+                Value::List(vec![
+                    Value::Symbol("b".to_owned()),
+                    Value::Symbol("c".to_owned()),
+                    Value::Symbol("d".to_owned()),
+                ])
+            ])
+        ])).unwrap(),
+        Value::List(vec![
+            Value::List(vec![
+                Value::Symbol("a".to_owned())
+            ]),
+            Value::Symbol("b".to_owned()),
+            Value::Symbol("c".to_owned()),
+            Value::Symbol("d".to_owned())
+        ])
+    );
+
+    assert_eq!(
+        eval(&Value::List(vec![
+            Value::Symbol("cons".to_owned()),
+            Value::String("a".to_owned()),
+            Value::List(vec![
+                Value::Symbol("quote".to_owned()),
+                Value::List(vec![
+                    Value::Symbol("b".to_owned()),
+                    Value::Symbol("c".to_owned())
+                ])
+            ])
+        ])).unwrap(),
+        Value::List(vec![
+            Value::String("a".to_owned()),
+            Value::Symbol("b".to_owned()),
+            Value::Symbol("c".to_owned())
+        ])
+    );
+}
+
+#[test]
+fn test_car() {
+    assert_eq!(eval_str("(car '(a b c))"), "a");
+    assert_eq!(eval_str("(car '((a) b c d))"), "(a)");
+    assert_eq!(eval_str("(car '(1 . 2))"), "1");
+}
+
+#[test]
+fn test_cdr() {
+    assert_eq!(eval_str("(cdr '((a) b c d))"), "(b c d)");
+    assert_eq!(eval_str("(cdr '(1 . 2))"), "2");
+}
+
+
 fn main() {
     let lexer = Lexer::new("(cons 1 '(2 . 3))");
     let mut parser = Parser::new(lexer);

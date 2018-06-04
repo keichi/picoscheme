@@ -40,6 +40,10 @@ impl<T: iter::Iterator<Item=lexer::Token>> Parser<T> {
                 self.tokens.next();
                 Ok(Value::Nil)
             },
+            Some(Token::Dot) => {
+                self.tokens.next();
+                Ok(self.parse().unwrap())
+            },
             _ => {
                 let car = Box::new(self.parse().unwrap());
                 let cdr = Box::new(self.parse_list().unwrap());
@@ -124,4 +128,22 @@ fn test_parse_literal() {
     let tokens = vec![lexer::Token::Integer(123)];
     let mut parser = Parser::new(tokens.into_iter());
     assert_eq!(Value::Integer(123), parser.parse().unwrap());
+}
+
+#[test]
+fn test_improper_list() {
+    let tokens = vec![
+        Token::OpenParen,
+        Token::Integer(123),
+        Token::Dot,
+        Token::Integer(456),
+        Token::CloseParen
+    ];
+    let mut parser = Parser::new(tokens.into_iter());
+
+    assert_eq!(
+        Value::Pair(Box::new(Value::Integer(123)),
+                    Box::new(Value::Integer(456))),
+        parser.parse().unwrap()
+    );
 }

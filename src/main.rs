@@ -9,7 +9,47 @@ fn add(args: &[Value]) -> Result<Value, String> {
     for v in args.iter() {
         match &eval(v)? {
             &Value::Integer(i) => result += i,
-            v => return Err(format!("Cannot add non-integer {}", v))
+            v => return Err(format!("Cannot apply non-integer {} to +", v))
+        }
+    }
+
+    Ok(Value::Integer(result))
+}
+
+fn sub(args: &[Value]) -> Result<Value, String> {
+    if args.is_empty() {
+        return Err("- requires at least one argument".to_owned())
+    } else if args.len() == 1 {
+        match &eval(&args[0])? {
+            &Value::Integer(i) => return Ok(Value::Integer(-i)),
+            v => return Err(format!("Cannot apply non-integer {} to -", v))
+        }
+    }
+
+    let mut result: i64;
+
+    match &eval(&args[0])? {
+        &Value::Integer(i) => result = i,
+        v => return Err(format!("Cannot apply non-integer {} to -", v))
+    }
+
+    for v in &args[1..] {
+        match &eval(v)? {
+            &Value::Integer(i) => result -= i,
+            v => return Err(format!("Cannot apply non-integer {} to -", v))
+        }
+    }
+
+    Ok(Value::Integer(result))
+}
+
+fn mul(args: &[Value]) -> Result<Value, String> {
+    let mut result = 1;
+
+    for v in args.iter() {
+        match &eval(v)? {
+            &Value::Integer(i) => result *= i,
+            v => return Err(format!("Cannot apply non-integer {} to *", v))
         }
     }
 
@@ -78,6 +118,8 @@ fn apply(f: &Value, args: &[Value]) -> Result<Value, String> {
     match f {
         &Value::Symbol(ref s) => match s.as_str() {
             "+" => add(args),
+            "-" => sub(args),
+            "*" => mul(args),
             "car" => car(args),
             "cdr" => cdr(args),
             "cons" => cons(args),
@@ -119,6 +161,19 @@ fn test_literal() {
     assert_eq!(eval_str("#t"), "#t");
 }
 
+#[test]
+fn test_basic_arithmetic() {
+    assert_eq!(eval_str("(+ 3 4)"), "7");
+    assert_eq!(eval_str("(+ 3)"), "3");
+    assert_eq!(eval_str("(+)"), "0");
+
+    assert_eq!(eval_str("(* 4)"), "4");
+    assert_eq!(eval_str("(*)"), "1");
+
+    assert_eq!(eval_str("(- 3 4)"), "-1");
+    assert_eq!(eval_str("(- 3 4 5)"), "-6");
+    assert_eq!(eval_str("(- 3)"), "-3");
+}
 
 #[test]
 fn test_cons() {

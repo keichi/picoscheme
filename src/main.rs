@@ -190,6 +190,17 @@ fn test_cdr() {
     assert_eq!(eval_str("(cdr '(1 . 2))"), "2");
 }
 
+#[test]
+fn test_quote() {
+    assert_eq!(eval_str("(quote a)"), "a");
+    assert_eq!(eval_str("(quote (+ 1 2))"), "(+ 1 2)");
+    assert_eq!(eval_str("'a"), "a");
+    assert_eq!(eval_str("'()"), "()");
+    assert_eq!(eval_str("'(+ 1 2)"), "(+ 1 2)");
+    assert_eq!(eval_str("'(quote a)"), "(quote a)");
+    assert_eq!(eval_str("''a"), "(quote a)");
+}
+
 
 fn main() {
     let lexer = Lexer::new("(cons 1 '(2 . 3))");

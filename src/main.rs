@@ -127,65 +127,6 @@ fn test_cons() {
     assert_eq!(eval_str("(cons \"a\" '(b c))"), "(\"a\" b c)");
     assert_eq!(eval_str("(cons 'a 3)"), "(a . 3)");
     assert_eq!(eval_str("(cons '(a b) 'c)"), "((a b) . c)");
-
-    assert_eq!(
-        eval(&Value::List(vec![
-            Value::Symbol("cons".to_owned()),
-            Value::List(vec![
-                Value::Symbol("quote".to_owned()),
-                Value::Symbol("a".to_owned())
-            ]),
-            Value::List(Vec::new())
-        ])).unwrap(),
-        Value::List(vec![
-            Value::Symbol("a".to_owned())
-        ])
-    );
-
-    assert_eq!(
-        eval(&Value::List(vec![
-            Value::Symbol("cons".to_owned()),
-            Value::List(vec![
-                Value::Symbol("quote".to_owned()),
-                Value::List(vec![Value::Symbol("a".to_owned())])
-            ]),
-            Value::List(vec![
-                Value::Symbol("quote".to_owned()),
-                Value::List(vec![
-                    Value::Symbol("b".to_owned()),
-                    Value::Symbol("c".to_owned()),
-                    Value::Symbol("d".to_owned()),
-                ])
-            ])
-        ])).unwrap(),
-        Value::List(vec![
-            Value::List(vec![
-                Value::Symbol("a".to_owned())
-            ]),
-            Value::Symbol("b".to_owned()),
-            Value::Symbol("c".to_owned()),
-            Value::Symbol("d".to_owned())
-        ])
-    );
-
-    assert_eq!(
-        eval(&Value::List(vec![
-            Value::Symbol("cons".to_owned()),
-            Value::String("a".to_owned()),
-            Value::List(vec![
-                Value::Symbol("quote".to_owned()),
-                Value::List(vec![
-                    Value::Symbol("b".to_owned()),
-                    Value::Symbol("c".to_owned())
-                ])
-            ])
-        ])).unwrap(),
-        Value::List(vec![
-            Value::String("a".to_owned()),
-            Value::Symbol("b".to_owned()),
-            Value::Symbol("c".to_owned())
-        ])
-    );
 }
 
 #[test]

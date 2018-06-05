@@ -83,13 +83,29 @@ fn cdr(args: &[Value]) -> Result<Value, String> {
     }
 }
 
-fn quote(args: &[Value]) -> Result<Value, String> {
+fn quote_expression(args: &[Value]) -> Result<Value, String> {
     if args.len() != 1 {
         return Err("quote requires 1 argument".to_owned())
     }
 
     Ok(args[0].clone())
 }
+
+fn if_expression(args: &[Value]) -> Result<Value, String> {
+    if args.len() != 2 && args.len() != 3 {
+        return Err("quote requires 2 or 3 arguments".to_owned())
+    }
+
+    match eval(&args[0])? {
+        Value::Boolean(false) => if args.len() == 2 {
+            Ok(Value::List(Vec::new()))
+        } else {
+            eval(&args[2])
+        },
+        _ => eval(&args[1]),
+    }
+}
+
 
 fn cons(args: &[Value]) -> Result<Value, String> {
     if args.len() != 2 {
@@ -117,7 +133,8 @@ fn cons(args: &[Value]) -> Result<Value, String> {
 fn apply(f: &Value, args: &[Value]) -> Result<Value, String> {
     match &eval(f)? {
         &Value::Symbol(ref s) => match s.as_str() {
-            "quote" => quote(args),
+            "quote" => quote_expression(args),
+            "if" => if_expression(args),
             _ => {
                 let args: Vec<_> = try!(args.iter().map(eval).collect());
 
@@ -214,6 +231,11 @@ fn test_quote() {
     assert_eq!(eval_str("''a"), "(quote a)");
 }
 
+#[test]
+fn test_if() {
+    assert_eq!(eval_str("(if #t 1 2)"), "1");
+    assert_eq!(eval_str("(if #f 1 2)"), "2")
+}
 
 fn main() {
     let lexer = Lexer::new("(cons 1 '(2 . 3))");

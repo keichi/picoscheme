@@ -11,7 +11,29 @@ pub enum Value {
     Boolean(bool),
     Symbol(String),
     Integer(i64),
-    String(String)
+    String(String),
+    Procedure(Procedure),
+}
+
+#[derive(Clone)]
+pub enum Procedure {
+    Builtin(fn(&[Value]) -> Result<Value, String>),
+    Scheme
+}
+
+impl fmt::Debug for Procedure {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Procedure::Builtin(_) => write!(f, "Builtin"),
+            Procedure::Scheme => write!(f, "Scheme")
+        }
+    }
+}
+
+impl PartialEq for Procedure {
+    fn eq(&self, other: &Self) -> bool {
+        self == other
+    }
 }
 
 impl fmt::Display for Value {
@@ -45,7 +67,8 @@ impl fmt::Display for Value {
             &Value::Boolean(false) => write!(f, "#f"),
             &Value::Symbol(ref s) => write!(f, "{}", s),
             &Value::Integer(i) => write!(f, "{}", i),
-            &Value::String(ref s) => write!(f, "\"{}\"", s)
+            &Value::String(ref s) => write!(f, "\"{}\"", s),
+            &Value::Procedure(_) => write!(f, "#<procedure>")
         }
     }
 }

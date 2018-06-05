@@ -1,5 +1,7 @@
+use std::collections::HashMap;
+
 use lexer::Lexer;
-use parser::{Parser, Value};
+use parser::{Parser, Procedure, Value};
 
 fn add_proc(args: &[Value]) -> Result<Value, String> {
     let mut result = 0;
@@ -104,7 +106,7 @@ fn cons_proc(args: &[Value]) -> Result<Value, String> {
     }
 }
 
-fn quote_exp(args: &[Value]) -> Result<Value, String> {
+fn quote_exp(args: &[Value], _: &Environment) -> Result<Value, String> {
     if args.len() != 1 {
         return Err("quote requires 1 argument".to_owned())
     }
@@ -112,56 +114,79 @@ fn quote_exp(args: &[Value]) -> Result<Value, String> {
     Ok(args[0].clone())
 }
 
-fn if_exp(args: &[Value]) -> Result<Value, String> {
+fn if_exp(args: &[Value], env: &Environment) -> Result<Value, String> {
     if args.len() != 2 && args.len() != 3 {
         return Err("quote requires 2 or 3 arguments".to_owned())
     }
 
-    match eval(&args[0])? {
+    match eval(&args[0], env)? {
         Value::Boolean(false) => if args.len() == 2 {
             Ok(Value::List(Vec::new()))
         } else {
-            eval(&args[2])
+            eval(&args[2], env)
         },
-        _ => eval(&args[1])
+        _ => eval(&args[1], env)
     }
 }
 
-fn apply(vs: &[Value]) -> Result<Value, String> {
-    let f = &eval(&vs[0])?;
+fn eval_list(vs: &[Value], env: &Environment) -> Result<Value, String> {
+    let f = &eval(&vs[0], env)?;
     let args = &vs[1..];
 
     match f {
         &Value::Symbol(ref s) => match s.as_str() {
-            "quote" => quote_exp(args),
-            "if" => if_exp(args),
-            _ => {
-                let args: Vec<_> = try!(args.iter().map(eval).collect());
-
-                match s.as_str() {
-                    "+" => add_proc(&args[..]),
-                    "-" => sub_proc(&args[..]),
-                    "*" => mul_proc(&args[..]),
-                    "car" => car_proc(&args[..]),
-                    "cdr" => cdr_proc(&args[..]),
-                    "cons" => cons_proc(&args[..]),
-                    s => Err(format!("Unbound variable {}", s))
-                }
-            },
+            "quote" => quote_exp(args, env),
+            "if" => if_exp(args, env),
+            _ => Err(format!("Invalid application to symbol {}", s))
         },
+        &Value::Procedure(Procedure::Builtin(f)) => {
+            let args: Result<Vec<Value>, String> = args.iter().map(|arg| eval(arg, env)).collect();
+
+            return f(&args?[..]);
+        },
+        &Value::Procedure(_) => Err(format!("Not yet implemented")),
         v => Err(format!("Invalid application to {}", v))
     }
 }
 
-pub fn eval(value: &Value) -> Result<Value, String> {
+pub fn eval(value: &Value, env: &Environment) -> Result<Value, String> {
     match value {
         &Value::List(ref vs) if vs.is_empty() => Ok(Value::List(Vec::new())),
-        &Value::List(ref vs) => apply(vs),
+        &Value::List(ref vs) => eval_list(vs, env),
         &Value::DottedList(_) => Err("Cannot evaluate dotted list".to_owned()),
         &Value::Boolean(b) => Ok(Value::Boolean(b.clone())),
-        &Value::Symbol(ref s) => Ok(Value::Symbol(s.clone())),
+        &Value::Symbol(ref s) => match s.as_str() {
+            "quote" => Ok(value.clone()),
+            "if" => Ok(value.clone()),
+            _ => match env.kvs.get(s) {
+                Some(v) => Ok(v.clone()),
+                None => Err(format!("Unbound variable {}", s))
+            }
+        },
         &Value::Integer(i) => Ok(Value::Integer(i.clone())),
-        &Value::String(ref s) => Ok(Value::String(s.clone()))
+        &Value::String(ref s) => Ok(Value::String(s.clone())),
+        &Value::Procedure(ref p) => Ok(Value::Procedure(p.clone()))
+    }
+}
+
+pub struct Environment {
+    kvs: HashMap<String, Value>
+}
+
+impl Environment {
+    pub fn new() -> Self {
+        let mut tmp = HashMap::new();
+
+        tmp.insert("+".to_owned(), Value::Procedure(Procedure::Builtin(add_proc)));
+        tmp.insert("-".to_owned(), Value::Procedure(Procedure::Builtin(sub_proc)));
+        tmp.insert("*".to_owned(), Value::Procedure(Procedure::Builtin(mul_proc)));
+        tmp.insert("car".to_owned(), Value::Procedure(Procedure::Builtin(car_proc)));
+        tmp.insert("cdr".to_owned(), Value::Procedure(Procedure::Builtin(cdr_proc)));
+        tmp.insert("cons".to_owned(), Value::Procedure(Procedure::Builtin(cons_proc)));
+
+        Environment {
+            kvs: tmp
+        }
     }
 }
 
@@ -170,7 +195,8 @@ fn rep(sexp: &str) -> String {
     let lexer = Lexer::new(sexp);
     let mut parser = Parser::new(lexer);
     let parsed = parser.parse().expect("Failed to parse");
-    let result = eval(&parsed).expect("Failed to evaluate");
+    let env = Environment::new();
+    let result = eval(&parsed, &env).expect("Failed to evaluate");
 
     format!("{}", result)
 }

@@ -1,7 +1,7 @@
 use lexer::Lexer;
 use parser::{Parser, Value};
 
-fn add(args: &[Value]) -> Result<Value, String> {
+fn add_proc(args: &[Value]) -> Result<Value, String> {
     let mut result = 0;
 
     for v in args.iter() {
@@ -14,7 +14,7 @@ fn add(args: &[Value]) -> Result<Value, String> {
     Ok(Value::Integer(result))
 }
 
-fn sub(args: &[Value]) -> Result<Value, String> {
+fn sub_proc(args: &[Value]) -> Result<Value, String> {
     if args.is_empty() {
         return Err("- requires at least one argument".to_owned())
     } else if args.len() == 1 {
@@ -41,7 +41,7 @@ fn sub(args: &[Value]) -> Result<Value, String> {
     Ok(Value::Integer(result))
 }
 
-fn mul(args: &[Value]) -> Result<Value, String> {
+fn mul_proc(args: &[Value]) -> Result<Value, String> {
     let mut result = 1;
 
     for v in args.iter() {
@@ -54,7 +54,7 @@ fn mul(args: &[Value]) -> Result<Value, String> {
     Ok(Value::Integer(result))
 }
 
-fn car(args: &[Value]) -> Result<Value, String> {
+fn car_proc(args: &[Value]) -> Result<Value, String> {
     if args.len() != 1 {
         return Err("car requires 1 argument".to_owned())
     }
@@ -66,7 +66,7 @@ fn car(args: &[Value]) -> Result<Value, String> {
     }
 }
 
-fn cdr(args: &[Value]) -> Result<Value, String> {
+fn cdr_proc(args: &[Value]) -> Result<Value, String> {
     if args.len() != 1 {
         return Err("cdr requires 1 argument".to_owned())
     }
@@ -77,35 +77,11 @@ fn cdr(args: &[Value]) -> Result<Value, String> {
         &Value::List(ref vs) => Ok(Value::List(vs[1..].to_vec())),
         &Value::DottedList(ref vs) if vs.len() == 2 => Ok(vs[1].clone()),
         &Value::DottedList(ref vs) => Ok(Value::List(vs[1..].to_vec())),
-        _ => Err("car requires list".to_owned())
+        _ => Err("cdr requires list".to_owned())
     }
 }
 
-fn quote_expression(args: &[Value]) -> Result<Value, String> {
-    if args.len() != 1 {
-        return Err("quote requires 1 argument".to_owned())
-    }
-
-    Ok(args[0].clone())
-}
-
-fn if_expression(args: &[Value]) -> Result<Value, String> {
-    if args.len() != 2 && args.len() != 3 {
-        return Err("quote requires 2 or 3 arguments".to_owned())
-    }
-
-    match eval(&args[0])? {
-        Value::Boolean(false) => if args.len() == 2 {
-            Ok(Value::List(Vec::new()))
-        } else {
-            eval(&args[2])
-        },
-        _ => eval(&args[1]),
-    }
-}
-
-
-fn cons(args: &[Value]) -> Result<Value, String> {
+fn cons_proc(args: &[Value]) -> Result<Value, String> {
     if args.len() != 2 {
         return Err("cons requires 2 arguments".to_owned())
     }
@@ -128,21 +104,47 @@ fn cons(args: &[Value]) -> Result<Value, String> {
     }
 }
 
-fn apply(f: &Value, args: &[Value]) -> Result<Value, String> {
-    match &eval(f)? {
+fn quote_exp(args: &[Value]) -> Result<Value, String> {
+    if args.len() != 1 {
+        return Err("quote requires 1 argument".to_owned())
+    }
+
+    Ok(args[0].clone())
+}
+
+fn if_exp(args: &[Value]) -> Result<Value, String> {
+    if args.len() != 2 && args.len() != 3 {
+        return Err("quote requires 2 or 3 arguments".to_owned())
+    }
+
+    match eval(&args[0])? {
+        Value::Boolean(false) => if args.len() == 2 {
+            Ok(Value::List(Vec::new()))
+        } else {
+            eval(&args[2])
+        },
+        _ => eval(&args[1])
+    }
+}
+
+fn apply(vs: &[Value]) -> Result<Value, String> {
+    let f = &eval(&vs[0])?;
+    let args = &vs[1..];
+
+    match f {
         &Value::Symbol(ref s) => match s.as_str() {
-            "quote" => quote_expression(args),
-            "if" => if_expression(args),
+            "quote" => quote_exp(args),
+            "if" => if_exp(args),
             _ => {
                 let args: Vec<_> = try!(args.iter().map(eval).collect());
 
                 match s.as_str() {
-                    "+" => add(&args[..]),
-                    "-" => sub(&args[..]),
-                    "*" => mul(&args[..]),
-                    "car" => car(&args[..]),
-                    "cdr" => cdr(&args[..]),
-                    "cons" => cons(&args[..]),
+                    "+" => add_proc(&args[..]),
+                    "-" => sub_proc(&args[..]),
+                    "*" => mul_proc(&args[..]),
+                    "car" => car_proc(&args[..]),
+                    "cdr" => cdr_proc(&args[..]),
+                    "cons" => cons_proc(&args[..]),
                     s => Err(format!("Unbound variable {}", s))
                 }
             },
@@ -154,7 +156,7 @@ fn apply(f: &Value, args: &[Value]) -> Result<Value, String> {
 pub fn eval(value: &Value) -> Result<Value, String> {
     match value {
         &Value::List(ref vs) if vs.is_empty() => Ok(Value::List(Vec::new())),
-        &Value::List(ref vs) => apply(&vs[0], &vs[1..]),
+        &Value::List(ref vs) => apply(vs),
         &Value::DottedList(_) => Err("Cannot evaluate dotted list".to_owned()),
         &Value::Boolean(b) => Ok(Value::Boolean(b.clone())),
         &Value::Symbol(ref s) => Ok(Value::Symbol(s.clone())),

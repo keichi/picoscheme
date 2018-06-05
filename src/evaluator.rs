@@ -1,4 +1,5 @@
-use parser::Value;
+use lexer::Lexer;
+use parser::{Parser, Value};
 
 fn add(args: &[Value]) -> Result<Value, String> {
     let mut result = 0;
@@ -162,8 +163,8 @@ pub fn eval(value: &Value) -> Result<Value, String> {
     }
 }
 
-#[test]
-fn eval_str(sexp: &str) -> String {
+#[allow(dead_code)]
+fn rep(sexp: &str) -> String {
     let lexer = Lexer::new(sexp);
     let mut parser = Parser::new(lexer);
     let parsed = parser.parse().expect("Failed to parse");
@@ -174,63 +175,63 @@ fn eval_str(sexp: &str) -> String {
 
 #[test]
 fn test_literal() {
-    assert_eq!(eval_str("'\"abc\""), "\"abc\"");
-    assert_eq!(eval_str("\"abc\""), "\"abc\"");
-    assert_eq!(eval_str("'145932"), "145932");
-    assert_eq!(eval_str("145932"), "145932");
-    assert_eq!(eval_str("'#t"), "#t");
-    assert_eq!(eval_str("#t"), "#t");
+    assert_eq!(rep("'\"abc\""), "\"abc\"");
+    assert_eq!(rep("\"abc\""), "\"abc\"");
+    assert_eq!(rep("'145932"), "145932");
+    assert_eq!(rep("145932"), "145932");
+    assert_eq!(rep("'#t"), "#t");
+    assert_eq!(rep("#t"), "#t");
 }
 
 #[test]
 fn test_basic_arithmetic() {
-    assert_eq!(eval_str("(+ 3 4)"), "7");
-    assert_eq!(eval_str("(+ 3)"), "3");
-    assert_eq!(eval_str("(+)"), "0");
+    assert_eq!(rep("(+ 3 4)"), "7");
+    assert_eq!(rep("(+ 3)"), "3");
+    assert_eq!(rep("(+)"), "0");
 
-    assert_eq!(eval_str("(* 4)"), "4");
-    assert_eq!(eval_str("(*)"), "1");
+    assert_eq!(rep("(* 4)"), "4");
+    assert_eq!(rep("(*)"), "1");
 
-    assert_eq!(eval_str("(- 3 4)"), "-1");
-    assert_eq!(eval_str("(- 3 4 5)"), "-6");
-    assert_eq!(eval_str("(- 3)"), "-3");
+    assert_eq!(rep("(- 3 4)"), "-1");
+    assert_eq!(rep("(- 3 4 5)"), "-6");
+    assert_eq!(rep("(- 3)"), "-3");
 }
 
 #[test]
 fn test_cons() {
-    assert_eq!(eval_str("(cons 'a '())"), "(a)");
-    assert_eq!(eval_str("(cons '(a) '(b c d))"), "((a) b c d)");
-    assert_eq!(eval_str("(cons \"a\" '(b c))"), "(\"a\" b c)");
-    assert_eq!(eval_str("(cons 'a 3)"), "(a . 3)");
-    assert_eq!(eval_str("(cons '(a b) 'c)"), "((a b) . c)");
+    assert_eq!(rep("(cons 'a '())"), "(a)");
+    assert_eq!(rep("(cons '(a) '(b c d))"), "((a) b c d)");
+    assert_eq!(rep("(cons \"a\" '(b c))"), "(\"a\" b c)");
+    assert_eq!(rep("(cons 'a 3)"), "(a . 3)");
+    assert_eq!(rep("(cons '(a b) 'c)"), "((a b) . c)");
 }
 
 #[test]
 fn test_car() {
-    assert_eq!(eval_str("(car '(a b c))"), "a");
-    assert_eq!(eval_str("(car '((a) b c d))"), "(a)");
-    assert_eq!(eval_str("(car '(1 . 2))"), "1");
+    assert_eq!(rep("(car '(a b c))"), "a");
+    assert_eq!(rep("(car '((a) b c d))"), "(a)");
+    assert_eq!(rep("(car '(1 . 2))"), "1");
 }
 
 #[test]
 fn test_cdr() {
-    assert_eq!(eval_str("(cdr '((a) b c d))"), "(b c d)");
-    assert_eq!(eval_str("(cdr '(1 . 2))"), "2");
+    assert_eq!(rep("(cdr '((a) b c d))"), "(b c d)");
+    assert_eq!(rep("(cdr '(1 . 2))"), "2");
 }
 
 #[test]
 fn test_quote() {
-    assert_eq!(eval_str("(quote a)"), "a");
-    assert_eq!(eval_str("(quote (+ 1 2))"), "(+ 1 2)");
-    assert_eq!(eval_str("'a"), "a");
-    assert_eq!(eval_str("'()"), "()");
-    assert_eq!(eval_str("'(+ 1 2)"), "(+ 1 2)");
-    assert_eq!(eval_str("'(quote a)"), "(quote a)");
-    assert_eq!(eval_str("''a"), "(quote a)");
+    assert_eq!(rep("(quote a)"), "a");
+    assert_eq!(rep("(quote (+ 1 2))"), "(+ 1 2)");
+    assert_eq!(rep("'a"), "a");
+    assert_eq!(rep("'()"), "()");
+    assert_eq!(rep("'(+ 1 2)"), "(+ 1 2)");
+    assert_eq!(rep("'(quote a)"), "(quote a)");
+    assert_eq!(rep("''a"), "(quote a)");
 }
 
 #[test]
 fn test_if() {
-    assert_eq!(eval_str("(if #t 1 2)"), "1");
-    assert_eq!(eval_str("(if #f 1 2)"), "2")
+    assert_eq!(rep("(if #t 1 2)"), "1");
+    assert_eq!(rep("(if #f 1 2)"), "2")
 }

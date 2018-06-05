@@ -110,6 +110,17 @@ fn eval_str(sexp: &str) -> String {
 }
 
 #[test]
+fn test_literal() {
+    assert_eq!(eval_str("'\"abc\""), "\"abc\"");
+    assert_eq!(eval_str("\"abc\""), "\"abc\"");
+    assert_eq!(eval_str("'145932"), "145932");
+    assert_eq!(eval_str("145932"), "145932");
+    assert_eq!(eval_str("'#t"), "#t");
+    assert_eq!(eval_str("#t"), "#t");
+}
+
+
+#[test]
 fn test_cons() {
     assert_eq!(eval_str("(cons 'a '())"), "(a)");
     assert_eq!(eval_str("(cons '(a) '(b c d))"), "((a) b c d)");

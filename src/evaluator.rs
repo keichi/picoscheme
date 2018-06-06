@@ -42,6 +42,25 @@ fn lambda_exp(args: &[Value], _env: &Environment) -> Result<Value, String> {
     Ok(Value::Procedure(Procedure::Scheme(vars, body)))
 }
 
+fn eval_proc(vars: &[Value], body: &[Value], args: &[Value], env: &Environment) -> Result<Value, String> {
+    if vars.len() != args.len() {
+        return Err(format!("procedure requires {} arguments but {} supplied",
+                           vars.len(), args.len()))
+    }
+
+    let new_env = env.clone();
+
+    for (var, arg) in vars.iter().zip(args.iter()) {
+        match var {
+            &Value::Symbol(ref s) => {
+                new_env.kvs.insert(s.to_owned(), arg.clone());
+            },
+            _ => {}
+        }
+    }
+
+    Ok(Value::Boolean(false))
+}
 
 fn eval_list(vs: &[Value], env: &Environment) -> Result<Value, String> {
     let f = &eval(&vs[0], env)?;
@@ -55,11 +74,17 @@ fn eval_list(vs: &[Value], env: &Environment) -> Result<Value, String> {
             _ => Err(format!("Invalid application to symbol {}", s))
         },
         &Value::Procedure(Procedure::Builtin(f)) => {
-            let args: Result<Vec<Value>, String> = args.iter().map(|arg| eval(arg, env)).collect();
+            let args: Result<Vec<Value>, String>
+                = args.iter().map(|arg| eval(arg, env)).collect();
 
             return f(&args?[..]);
         },
-        &Value::Procedure(_) => Err(format!("Not yet implemented")),
+        &Value::Procedure(Procedure::Scheme(ref vars, ref body)) => {
+            let args: Result<Vec<Value>, String>
+                = args.iter().map(|arg| eval(arg, env)).collect();
+
+            return eval_proc(&vars[..], &body[..], &args?[..], env);
+        },
         v => Err(format!("Invalid application to {}", v))
     }
 }

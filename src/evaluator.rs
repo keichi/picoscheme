@@ -56,10 +56,9 @@ pub fn eval(value: &Value, env: &Environment) -> Result<Value, String> {
         &Value::Symbol(ref s) => match s.as_str() {
             "quote" => Ok(value.clone()),
             "if" => Ok(value.clone()),
-            _ => match env.kvs.get(s) {
-                Some(v) => Ok(v.clone()),
-                None => Err(format!("Unbound variable {}", s))
-            }
+            _ => env.kvs.get(s)
+                    .ok_or(format!("Unbound variable {}", s))
+                    .map(|v| v.clone())
         },
         &Value::Integer(i) => Ok(Value::Integer(i.clone())),
         &Value::String(ref s) => Ok(Value::String(s.clone())),

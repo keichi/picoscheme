@@ -18,14 +18,14 @@ pub enum Value {
 #[derive(Clone)]
 pub enum Procedure {
     Builtin(fn(&[Value]) -> Result<Value, String>),
-    Scheme
+    Scheme(Vec<Value>, Vec<Value>)
 }
 
 impl fmt::Debug for Procedure {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Procedure::Builtin(_) => write!(f, "Builtin"),
-            Procedure::Scheme => write!(f, "Scheme")
+            Procedure::Scheme(_, _) => write!(f, "Scheme")
         }
     }
 }

@@ -27,6 +27,22 @@ fn if_exp(args: &[Value], env: &Environment) -> Result<Value, String> {
     }
 }
 
+fn lambda_exp(args: &[Value], _env: &Environment) -> Result<Value, String> {
+    if args.len() < 2 {
+        return Err("lambda requires more than 2 arguments".to_owned());
+    }
+
+    let vars = match &args[0] {
+        &Value::List(ref vs) => vs.clone(),
+        _ => return Err("First argument of lambda must be a list".to_owned())
+    };
+
+    let body = args[1..].to_vec();
+
+    Ok(Value::Procedure(Procedure::Scheme(vars, body)))
+}
+
+
 fn eval_list(vs: &[Value], env: &Environment) -> Result<Value, String> {
     let f = &eval(&vs[0], env)?;
     let args = &vs[1..];
@@ -35,6 +51,7 @@ fn eval_list(vs: &[Value], env: &Environment) -> Result<Value, String> {
         &Value::Symbol(ref s) => match s.as_str() {
             "quote" => quote_exp(args, env),
             "if" => if_exp(args, env),
+            "lambda" => lambda_exp(args, env),
             _ => Err(format!("Invalid application to symbol {}", s))
         },
         &Value::Procedure(Procedure::Builtin(f)) => {
@@ -56,6 +73,7 @@ pub fn eval(value: &Value, env: &Environment) -> Result<Value, String> {
         &Value::Symbol(ref s) => match s.as_str() {
             "quote" => Ok(value.clone()),
             "if" => Ok(value.clone()),
+            "lambda" => Ok(value.clone()),
             _ => env.kvs.get(s)
                     .ok_or(format!("Unbound variable {}", s))
                     .map(|v| v.clone())

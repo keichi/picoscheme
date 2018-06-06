@@ -8,7 +8,7 @@ use parser::Parser;
 use evaluator::{eval, Environment};
 
 fn main() {
-    let lexer = Lexer::new("(cons 1 '(2 . 3))");
+    let lexer = Lexer::new("((lambda (x) (+ x 1)) 1)");
     let mut parser = Parser::new(lexer);
     let parsed = parser.parse();
     let env = Environment::new();

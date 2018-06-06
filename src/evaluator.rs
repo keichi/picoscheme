@@ -56,6 +56,59 @@ fn mul_proc(args: &[Value]) -> Result<Value, String> {
     Ok(Value::Integer(result))
 }
 
+fn eq_proc(args: &[Value]) -> Result<Value, String> {
+    if args.len() < 2 {
+        return Err("= requires 2 or more arguments".to_owned());
+    }
+
+    let vs = args.iter()
+        .map(|arg| match arg {
+            &Value::Integer(i) => Ok(i),
+            v => Err(format!("Cannot apply non-integer {} to =", v))
+        })
+        .collect::<Result<Vec<i64>, String>>()?;
+
+    return Ok(Value::Boolean(vs.iter().all(|&v| v == vs[0])));
+}
+
+fn lt_proc(args: &[Value]) -> Result<Value, String> {
+    if args.len() < 2 {
+        return Err("= requires 2 or more arguments".to_owned());
+    }
+
+    let vs = args.iter()
+        .map(|arg| match arg {
+            &Value::Integer(i) => Ok(i),
+            v => Err(format!("Cannot apply non-integer {} to =", v))
+        })
+        .collect::<Result<Vec<i64>, String>>()?;
+
+    return Ok(Value::Boolean(
+        vs.iter()
+        .zip(vs.iter().skip(1))
+        .all(|(v1, v2)| v1 < v2)
+    ));
+}
+
+fn gt_proc(args: &[Value]) -> Result<Value, String> {
+    if args.len() < 2 {
+        return Err("= requires 2 or more arguments".to_owned());
+    }
+
+    let vs = args.iter()
+        .map(|arg| match arg {
+            &Value::Integer(i) => Ok(i),
+            v => Err(format!("Cannot apply non-integer {} to =", v))
+        })
+        .collect::<Result<Vec<i64>, String>>()?;
+
+    return Ok(Value::Boolean(
+        vs.iter()
+        .zip(vs.iter().skip(1))
+        .all(|(v1, v2)| v1 > v2)
+    ));
+}
+
 fn car_proc(args: &[Value]) -> Result<Value, String> {
     if args.len() != 1 {
         return Err("car requires 1 argument".to_owned())
@@ -180,6 +233,9 @@ impl Environment {
         tmp.insert("+".to_owned(), Value::Procedure(Procedure::Builtin(add_proc)));
         tmp.insert("-".to_owned(), Value::Procedure(Procedure::Builtin(sub_proc)));
         tmp.insert("*".to_owned(), Value::Procedure(Procedure::Builtin(mul_proc)));
+        tmp.insert("=".to_owned(), Value::Procedure(Procedure::Builtin(eq_proc)));
+        tmp.insert(">".to_owned(), Value::Procedure(Procedure::Builtin(gt_proc)));
+        tmp.insert("<".to_owned(), Value::Procedure(Procedure::Builtin(lt_proc)));
         tmp.insert("car".to_owned(), Value::Procedure(Procedure::Builtin(car_proc)));
         tmp.insert("cdr".to_owned(), Value::Procedure(Procedure::Builtin(cdr_proc)));
         tmp.insert("cons".to_owned(), Value::Procedure(Procedure::Builtin(cons_proc)));
@@ -259,7 +315,27 @@ fn test_quote() {
 }
 
 #[test]
+fn test_numerical_predicates() {
+    assert_eq!(rep("(= 1 1)"), "#t");
+    assert_eq!(rep("(= 1 1 1)"), "#t");
+    assert_eq!(rep("(= 1 2 3 4)"), "#f");
+
+    assert_eq!(rep("(< 1 1)"), "#f");
+    assert_eq!(rep("(< 1 2)"), "#t");
+    assert_eq!(rep("(< 2 1)"), "#f");
+    assert_eq!(rep("(< 1 2 3 4)"), "#t");
+    assert_eq!(rep("(< 1 2 3 2 1)"), "#f");
+
+    assert_eq!(rep("(> 1 1)"), "#f");
+    assert_eq!(rep("(> 1 2)"), "#f");
+    assert_eq!(rep("(> 2 1)"), "#t");
+    assert_eq!(rep("(> 4 3 2 1)"), "#t");
+    assert_eq!(rep("(> 1 2 3 2 1)"), "#f");
+}
+
+#[test]
 fn test_if() {
-    assert_eq!(rep("(if #t 1 2)"), "1");
-    assert_eq!(rep("(if #f 1 2)"), "2")
+    assert_eq!(rep("(if (> 3 2) 'yes 'no)"), "yes");
+    assert_eq!(rep("(if (> 2 3) 'yes 'no)"), "no");
+    assert_eq!(rep("(if (> 3 2) (- 3 2) (+ 3 2))"), "1");
 }

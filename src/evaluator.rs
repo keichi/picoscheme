@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use std::collections::HashMap;
 
 use builtin::*;
@@ -70,13 +71,13 @@ fn define_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
     }
 
     let var = match &args[0] {
-        &Value::Symbol(ref s) => s.clone(),
+        &Value::Symbol(ref s) => s,
         _ => return Err("First argument of define must be a symbol".to_owned())
     };
 
     let exp = eval(&args[1], env)?;
 
-    env.kvs.insert(var, exp.clone());
+    env.define(var, &exp);
 
     return Ok(exp);
 }
@@ -87,17 +88,17 @@ fn set_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
     }
 
     let var = match &args[0] {
-        &Value::Symbol(ref s) => s.clone(),
+        &Value::Symbol(ref s) => s,
         _ => return Err("First argument of set! must be a symbol".to_owned())
     };
 
-    if !env.kvs.contains_key(&var) {
+    if !env.has(var) {
         return Err(format!("Symbol {} is not defined", var));
     }
 
     let exp = eval(&args[1], env)?;
 
-    env.kvs.insert(var, exp.clone());
+    env.set(var, &exp);
 
     return Ok(exp);
 }
@@ -143,7 +144,7 @@ pub fn eval(value: &Value, env: &mut Environment) -> Result<Value, String> {
             "lambda" => Ok(value.clone()),
             "define" => Ok(value.clone()),
             "set!" => Ok(value.clone()),
-            _ => env.kvs.get(s)
+            _ => env.get(s)
                     .ok_or(format!("Unbound variable {}", s))
                     .map(|v| v.clone())
         },
@@ -155,11 +156,12 @@ pub fn eval(value: &Value, env: &mut Environment) -> Result<Value, String> {
 
 #[derive(Clone, Debug)]
 pub struct Environment {
+    parent: Option<Rc<Environment>>,
     kvs: HashMap<String, Value>
 }
 
 impl Environment {
-    pub fn new() -> Self {
+    pub fn new_global() -> Self {
         let builtins: Vec<(&str, BuiltinFunc)> =
             vec![
                 ("+",    add_proc),
@@ -178,7 +180,26 @@ impl Environment {
                  (s.to_owned(), Value::Procedure(Procedure::Builtin(f))))
             .collect();
 
-        Environment { kvs: kvs }
+        Environment { parent: None, kvs: kvs }
+    }
+
+    pub fn new_child(parent: Rc<Environment>) -> Self {
+        Environment { parent: Some(parent.clone()), kvs: HashMap::new()}
+    }
+
+    pub fn define(&mut self, key: &str, value: &Value) {
+        self.kvs.insert(key.to_owned(), value.clone());
+    }
+
+    pub fn set(&mut self, key: &str, value: &Value) {
+    }
+
+    pub fn get(&self, key: &str) -> Option<&Value> {
+        None
+    }
+
+    pub fn has(&mut self, key: &str) -> bool {
+        false
     }
 }
 

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use builtin::*;
-use parser::{Procedure, Value};
+use value::{Procedure, Value};
 
 fn quote_exp(args: &[Value], _: &Environment) -> Result<Value, String> {
     if args.len() != 1 {

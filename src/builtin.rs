@@ -1,4 +1,4 @@
-use parser::Value;
+use value::Value;
 
 pub fn add_proc(args: &[Value]) -> Result<Value, String> {
     let mut result = 0;

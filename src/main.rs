@@ -1,3 +1,4 @@
+mod value;
 mod builtin;
 mod lexer;
 mod parser;

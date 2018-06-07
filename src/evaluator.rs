@@ -12,7 +12,7 @@ fn quote_exp(args: &[Value], _: &Environment) -> Result<Value, String> {
     Ok(args[0].clone())
 }
 
-fn if_exp(args: &[Value], env: &Environment) -> Result<Value, String> {
+fn if_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
     if args.len() != 2 && args.len() != 3 {
         return Err("quote requires 2 or 3 arguments".to_owned())
     }
@@ -27,7 +27,7 @@ fn if_exp(args: &[Value], env: &Environment) -> Result<Value, String> {
     }
 }
 
-fn lambda_exp(args: &[Value], _env: &Environment) -> Result<Value, String> {
+fn lambda_exp(args: &[Value], _env: &mut Environment) -> Result<Value, String> {
     if args.len() < 2 {
         return Err("lambda requires more than 2 arguments".to_owned());
     }
@@ -42,13 +42,13 @@ fn lambda_exp(args: &[Value], _env: &Environment) -> Result<Value, String> {
     Ok(Value::Procedure(Procedure::Scheme(vars, body)))
 }
 
-fn eval_proc(vars: &[Value], body: &[Value], args: &[Value], env: &Environment) -> Result<Value, String> {
+fn eval_proc(vars: &[Value], body: &[Value], args: &[Value], env: &mut Environment) -> Result<Value, String> {
     if vars.len() != args.len() {
         return Err(format!("procedure requires {} arguments but {} supplied",
                            vars.len(), args.len()))
     }
 
-    let new_env = env.clone();
+    let mut new_env = env.clone();
 
     for (var, arg) in vars.iter().zip(args.iter()) {
         match var {
@@ -59,10 +59,13 @@ fn eval_proc(vars: &[Value], body: &[Value], args: &[Value], env: &Environment) 
         }
     }
 
-    Ok(Value::Boolean(false))
+    return body.iter()
+        .map(|e| eval(e, &mut new_env))
+        .collect::<Result<Vec<Value>, String>>()
+        .map(|rs| rs.last().unwrap().clone());
 }
 
-fn eval_list(vs: &[Value], env: &Environment) -> Result<Value, String> {
+fn eval_list(vs: &[Value], env: &mut Environment) -> Result<Value, String> {
     let f = &eval(&vs[0], env)?;
     let args = &vs[1..];
 
@@ -89,7 +92,7 @@ fn eval_list(vs: &[Value], env: &Environment) -> Result<Value, String> {
     }
 }
 
-pub fn eval(value: &Value, env: &Environment) -> Result<Value, String> {
+pub fn eval(value: &Value, env: &mut Environment) -> Result<Value, String> {
     match value {
         &Value::List(ref vs) if vs.is_empty() => Ok(Value::List(Vec::new())),
         &Value::List(ref vs) => eval_list(vs, env),
@@ -109,6 +112,7 @@ pub fn eval(value: &Value, env: &Environment) -> Result<Value, String> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Environment {
     kvs: HashMap<String, Value>
 }
@@ -138,8 +142,8 @@ pub fn rep(sexp: &str) -> String {
     let lexer = Lexer::new(sexp);
     let mut parser = Parser::new(lexer);
     let parsed = parser.parse().expect("Failed to parse");
-    let env = Environment::new();
-    let result = eval(&parsed, &env).expect("Failed to evaluate");
+    let mut env = Environment::new();
+    let result = eval(&parsed, &mut env).expect("Failed to evaluate");
 
     format!("{}", result)
 }
@@ -160,4 +164,9 @@ fn test_if() {
     assert_eq!(rep("(if (> 3 2) 'yes 'no)"), "yes");
     assert_eq!(rep("(if (> 2 3) 'yes 'no)"), "no");
     assert_eq!(rep("(if (> 3 2) (- 3 2) (+ 3 2))"), "1");
+}
+
+#[test]
+fn test_lambda() {
+    assert_eq!(rep("((lambda (x) (+ x x)) 4)"), "8");
 }

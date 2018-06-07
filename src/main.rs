@@ -8,13 +8,13 @@ use parser::Parser;
 use evaluator::{eval, Environment};
 
 fn main() {
-    let lexer = Lexer::new("((lambda (x) (+ x 1)) 1)");
+    let lexer = Lexer::new("((lambda (x) (+ (* x x) x 1)) 2)");
     let mut parser = Parser::new(lexer);
     let parsed = parser.parse();
-    let env = Environment::new();
+    let mut env = Environment::new();
 
     match parsed {
-        Ok(v) => match eval(&v, &env) {
+        Ok(v) => match eval(&v, &mut env) {
             Ok(v) => println!("{}", v),
             Err(e) => println!("Error: {}", e)
         },

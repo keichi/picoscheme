@@ -192,5 +192,5 @@ fn test_lambda() {
 
 #[test]
 fn test_define() {
-    assert_eq!(rep("(define a 1)"), "()");
+    assert_eq!(rep("(define a 1)"), "1");
 }

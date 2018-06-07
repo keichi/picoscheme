@@ -22,12 +22,9 @@ fn main() {
 
         println!("{} =>", exp);
 
-        match parsed {
-            Ok(v) => match eval(&v, &mut env) {
-                Ok(v) => println!("{}", v),
-                Err(e) => println!("Error: {}", e)
-            },
-            Err(e) => println!("Error {}", e)
+        match parsed.and_then(|e| eval(&e, &mut env)) {
+            Ok(v) => println!("{}", v),
+            Err(e) => println!("Error: {}", e)
         }
     }
 }

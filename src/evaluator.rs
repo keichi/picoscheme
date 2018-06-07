@@ -77,9 +77,9 @@ fn define_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
 
     let exp = eval(&args[1], env)?;
 
-    env.kvs.insert(var, exp);
+    env.kvs.insert(var, exp.clone());
 
-    Ok(Value::List(Vec::new()))
+    return Ok(exp);
 }
 
 fn eval_list(vs: &[Value], env: &mut Environment) -> Result<Value, String> {

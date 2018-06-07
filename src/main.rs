@@ -2,6 +2,7 @@ mod builtin;
 mod lexer;
 mod parser;
 mod evaluator;
+mod util;
 
 use lexer::Lexer;
 use parser::Parser;

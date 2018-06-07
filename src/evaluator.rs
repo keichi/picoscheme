@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use builtin::*;
-use lexer::Lexer;
-use parser::{Parser, Procedure, Value};
+use parser::{Procedure, Value};
 
 fn quote_exp(args: &[Value], _: &Environment) -> Result<Value, String> {
     if args.len() != 1 {
@@ -156,41 +155,59 @@ impl Environment {
     }
 }
 
-#[allow(dead_code)]
-pub fn rep(sexp: &str) -> String {
-    let lexer = Lexer::new(sexp);
-    let mut parser = Parser::new(lexer);
-    let parsed = parser.parse().expect("Failed to parse");
-    let mut env = Environment::new();
-    let result = eval(&parsed, &mut env).expect("Failed to evaluate");
+#[cfg(test)]
+mod tests {
+    use util::rep;
 
-    format!("{}", result)
-}
+    #[test]
+    fn test_quote() {
+        let cases = vec![
+            ("(quote a)",       "a"),
+            ("(quote (+ 1 2))", "(+ 1 2)"),
+            ("'a",              "a"),
+            ("'()",             "()"),
+            ("'(+ 1 2)",        "(+ 1 2)"),
+            ("'(quote a)",      "(quote a)"),
+            ("''a",             "(quote a)")
+        ];
 
-#[test]
-fn test_quote() {
-    assert_eq!(rep("(quote a)"), "a");
-    assert_eq!(rep("(quote (+ 1 2))"), "(+ 1 2)");
-    assert_eq!(rep("'a"), "a");
-    assert_eq!(rep("'()"), "()");
-    assert_eq!(rep("'(+ 1 2)"), "(+ 1 2)");
-    assert_eq!(rep("'(quote a)"), "(quote a)");
-    assert_eq!(rep("''a"), "(quote a)");
-}
+        for (input, expected) in cases {
+            assert_eq!(rep(input), expected);
+        }
+    }
 
-#[test]
-fn test_if() {
-    assert_eq!(rep("(if (> 3 2) 'yes 'no)"), "yes");
-    assert_eq!(rep("(if (> 2 3) 'yes 'no)"), "no");
-    assert_eq!(rep("(if (> 3 2) (- 3 2) (+ 3 2))"), "1");
-}
+    #[test]
+    fn test_if() {
+        let cases = vec![
+            ("(if (> 3 2) 'yes 'no)",           "yes"),
+            ("(if (> 2 3) 'yes 'no)",           "no"),
+            ("(if (> 3 2) (- 3 2) (+ 3 2))",    "1")
+        ];
 
-#[test]
-fn test_lambda() {
-    assert_eq!(rep("((lambda (x) (+ x x)) 4)"), "8");
-}
+        for (input, expected) in cases {
+            assert_eq!(rep(input), expected);
+        }
+    }
 
-#[test]
-fn test_define() {
-    assert_eq!(rep("(define a 1)"), "1");
+    #[test]
+    fn test_lambda() {
+        let cases = vec![
+            ("((lambda (x) (+ x x)) 4)", "8")
+        ];
+
+        for (input, expected) in cases {
+            assert_eq!(rep(input), expected);
+        }
+    }
+
+    #[test]
+    fn test_define() {
+        let cases = vec![
+            ("(define a 1)", "1")
+        ];
+
+        for (input, expected) in cases {
+            assert_eq!(rep(input), expected);
+        }
+    }
 }

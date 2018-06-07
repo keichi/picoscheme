@@ -1,4 +1,3 @@
-use evaluator::rep;
 use parser::Value;
 
 pub fn add_proc(args: &[Value]) -> Result<Value, String> {
@@ -157,59 +156,62 @@ pub fn cons_proc(args: &[Value]) -> Result<Value, String> {
     }
 }
 
-// TODO Use table driven testing?
+#[cfg(test)]
+mod tests {
+    use util::rep;
 
-#[test]
-fn test_basic_arithmetic() {
-    assert_eq!(rep("(+ 3 4)"), "7");
-    assert_eq!(rep("(+ 3)"), "3");
-    assert_eq!(rep("(+)"), "0");
+    #[test]
+    fn test_basic_arithmetic() {
+        assert_eq!(rep("(+ 3 4)"), "7");
+        assert_eq!(rep("(+ 3)"), "3");
+        assert_eq!(rep("(+)"), "0");
 
-    assert_eq!(rep("(* 4)"), "4");
-    assert_eq!(rep("(*)"), "1");
+        assert_eq!(rep("(* 4)"), "4");
+        assert_eq!(rep("(*)"), "1");
 
-    assert_eq!(rep("(- 3 4)"), "-1");
-    assert_eq!(rep("(- 3 4 5)"), "-6");
-    assert_eq!(rep("(- 3)"), "-3");
-}
+        assert_eq!(rep("(- 3 4)"), "-1");
+        assert_eq!(rep("(- 3 4 5)"), "-6");
+        assert_eq!(rep("(- 3)"), "-3");
+    }
 
-#[test]
-fn test_cons() {
-    assert_eq!(rep("(cons 'a '())"), "(a)");
-    assert_eq!(rep("(cons '(a) '(b c d))"), "((a) b c d)");
-    assert_eq!(rep("(cons \"a\" '(b c))"), "(\"a\" b c)");
-    assert_eq!(rep("(cons 'a 3)"), "(a . 3)");
-    assert_eq!(rep("(cons '(a b) 'c)"), "((a b) . c)");
-}
+    #[test]
+    fn test_cons() {
+        assert_eq!(rep("(cons 'a '())"), "(a)");
+        assert_eq!(rep("(cons '(a) '(b c d))"), "((a) b c d)");
+        assert_eq!(rep("(cons \"a\" '(b c))"), "(\"a\" b c)");
+        assert_eq!(rep("(cons 'a 3)"), "(a . 3)");
+        assert_eq!(rep("(cons '(a b) 'c)"), "((a b) . c)");
+    }
 
-#[test]
-fn test_car() {
-    assert_eq!(rep("(car '(a b c))"), "a");
-    assert_eq!(rep("(car '((a) b c d))"), "(a)");
-    assert_eq!(rep("(car '(1 . 2))"), "1");
-}
+    #[test]
+    fn test_car() {
+        assert_eq!(rep("(car '(a b c))"), "a");
+        assert_eq!(rep("(car '((a) b c d))"), "(a)");
+        assert_eq!(rep("(car '(1 . 2))"), "1");
+    }
 
-#[test]
-fn test_cdr() {
-    assert_eq!(rep("(cdr '((a) b c d))"), "(b c d)");
-    assert_eq!(rep("(cdr '(1 . 2))"), "2");
-}
+    #[test]
+    fn test_cdr() {
+        assert_eq!(rep("(cdr '((a) b c d))"), "(b c d)");
+        assert_eq!(rep("(cdr '(1 . 2))"), "2");
+    }
 
-#[test]
-fn test_numerical_predicates() {
-    assert_eq!(rep("(= 1 1)"), "#t");
-    assert_eq!(rep("(= 1 1 1)"), "#t");
-    assert_eq!(rep("(= 1 2 3 4)"), "#f");
+    #[test]
+    fn test_numerical_predicates() {
+        assert_eq!(rep("(= 1 1)"), "#t");
+        assert_eq!(rep("(= 1 1 1)"), "#t");
+        assert_eq!(rep("(= 1 2 3 4)"), "#f");
 
-    assert_eq!(rep("(< 1 1)"), "#f");
-    assert_eq!(rep("(< 1 2)"), "#t");
-    assert_eq!(rep("(< 2 1)"), "#f");
-    assert_eq!(rep("(< 1 2 3 4)"), "#t");
-    assert_eq!(rep("(< 1 2 3 2 1)"), "#f");
+        assert_eq!(rep("(< 1 1)"), "#f");
+        assert_eq!(rep("(< 1 2)"), "#t");
+        assert_eq!(rep("(< 2 1)"), "#f");
+        assert_eq!(rep("(< 1 2 3 4)"), "#t");
+        assert_eq!(rep("(< 1 2 3 2 1)"), "#f");
 
-    assert_eq!(rep("(> 1 1)"), "#f");
-    assert_eq!(rep("(> 1 2)"), "#f");
-    assert_eq!(rep("(> 2 1)"), "#t");
-    assert_eq!(rep("(> 4 3 2 1)"), "#t");
-    assert_eq!(rep("(> 1 2 3 2 1)"), "#f");
+        assert_eq!(rep("(> 1 1)"), "#f");
+        assert_eq!(rep("(> 1 2)"), "#f");
+        assert_eq!(rep("(> 2 1)"), "#t");
+        assert_eq!(rep("(> 4 3 2 1)"), "#t");
+        assert_eq!(rep("(> 1 2 3 2 1)"), "#f");
+    }
 }

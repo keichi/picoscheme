@@ -182,94 +182,98 @@ impl<T: Iterator<Item=Token>> Parser<T> {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-fn test_parse_literal() {
-    let tokens = vec![Token::Boolean(true)];
-    let mut parser = Parser::new(tokens.into_iter());
+    #[test]
+    fn test_parse_literal() {
+        let tokens = vec![Token::Boolean(true)];
+        let mut parser = Parser::new(tokens.into_iter());
 
-    assert_eq!(Value::Boolean(true), parser.parse().unwrap());
+        assert_eq!(Value::Boolean(true), parser.parse().unwrap());
 
-    let tokens = vec![Token::Identifier("a".to_owned())];
-    let mut parser = Parser::new(tokens.into_iter());
+        let tokens = vec![Token::Identifier("a".to_owned())];
+        let mut parser = Parser::new(tokens.into_iter());
 
-    assert_eq!(Value::Symbol("a".to_owned()), parser.parse().unwrap());
+        assert_eq!(Value::Symbol("a".to_owned()), parser.parse().unwrap());
 
-    let tokens = vec![Token::Integer(123)];
-    let mut parser = Parser::new(tokens.into_iter());
+        let tokens = vec![Token::Integer(123)];
+        let mut parser = Parser::new(tokens.into_iter());
 
-    assert_eq!(Value::Integer(123), parser.parse().unwrap());
+        assert_eq!(Value::Integer(123), parser.parse().unwrap());
 
-    let tokens = vec![Token::String("b".to_owned())];
-    let mut parser = Parser::new(tokens.into_iter());
+        let tokens = vec![Token::String("b".to_owned())];
+        let mut parser = Parser::new(tokens.into_iter());
 
-    assert_eq!(Value::String("b".to_owned()), parser.parse().unwrap());
-}
+        assert_eq!(Value::String("b".to_owned()), parser.parse().unwrap());
+    }
 
-#[test]
-fn test_list() {
-    let tokens = vec![
-        Token::OpenParen,
-        Token::String("a".to_owned()),
-        Token::Integer(123),
-        Token::Identifier("b".to_owned()),
-        Token::CloseParen
-    ];
-    let mut parser = Parser::new(tokens.into_iter());
+    #[test]
+    fn test_list() {
+        let tokens = vec![
+            Token::OpenParen,
+            Token::String("a".to_owned()),
+            Token::Integer(123),
+            Token::Identifier("b".to_owned()),
+            Token::CloseParen
+        ];
+        let mut parser = Parser::new(tokens.into_iter());
 
-    assert_eq!(
-        Value::List(vec![
-            Value::String("a".to_owned()),
-            Value::Integer(123),
-            Value::Symbol("b".to_owned())
-        ]),
-        parser.parse().unwrap()
-    );
-}
-
-#[test]
-fn test_nested_list() {
-    let tokens = vec![
-        Token::OpenParen,
-        Token::String("a".to_owned()),
-        Token::Integer(123),
-        Token::OpenParen,
-        Token::Identifier("b".to_owned()),
-        Token::Integer(456),
-        Token::CloseParen,
-        Token::CloseParen
-    ];
-    let mut parser = Parser::new(tokens.into_iter());
-
-    assert_eq!(
-        Value::List(vec![
-            Value::String("a".to_owned()),
-            Value::Integer(123),
+        assert_eq!(
             Value::List(vec![
-                Value::Symbol("b".to_owned()),
-                Value::Integer(456),
+                Value::String("a".to_owned()),
+                Value::Integer(123),
+                Value::Symbol("b".to_owned())
             ]),
-        ]),
-        parser.parse().unwrap()
-    );
-}
+            parser.parse().unwrap()
+        );
+    }
 
-#[test]
-fn test_dotted_list() {
-    let tokens = vec![
-        Token::OpenParen,
-        Token::Integer(123),
-        Token::Dot,
-        Token::Integer(456),
-        Token::CloseParen
-    ];
-    let mut parser = Parser::new(tokens.into_iter());
+    #[test]
+    fn test_nested_list() {
+        let tokens = vec![
+            Token::OpenParen,
+            Token::String("a".to_owned()),
+            Token::Integer(123),
+            Token::OpenParen,
+            Token::Identifier("b".to_owned()),
+            Token::Integer(456),
+            Token::CloseParen,
+            Token::CloseParen
+        ];
+        let mut parser = Parser::new(tokens.into_iter());
 
-    assert_eq!(
-        Value::DottedList(vec![
-            Value::Integer(123),
-            Value::Integer(456)
-        ]),
-        parser.parse().unwrap()
-    );
+        assert_eq!(
+            Value::List(vec![
+                Value::String("a".to_owned()),
+                Value::Integer(123),
+                Value::List(vec![
+                    Value::Symbol("b".to_owned()),
+                    Value::Integer(456),
+                ]),
+            ]),
+            parser.parse().unwrap()
+        );
+    }
+
+    #[test]
+    fn test_dotted_list() {
+        let tokens = vec![
+            Token::OpenParen,
+            Token::Integer(123),
+            Token::Dot,
+            Token::Integer(456),
+            Token::CloseParen
+        ];
+        let mut parser = Parser::new(tokens.into_iter());
+
+        assert_eq!(
+            Value::DottedList(vec![
+                Value::Integer(123),
+                Value::Integer(456)
+            ]),
+            parser.parse().unwrap()
+        );
+    }
 }

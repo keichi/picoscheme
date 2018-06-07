@@ -24,8 +24,8 @@ pub enum Procedure {
 impl fmt::Debug for Procedure {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Procedure::Builtin(_) => write!(f, "Builtin"),
-            Procedure::Scheme(_, _, _) => write!(f, "Scheme")
+            &Procedure::Builtin(_) => write!(f, "Builtin"),
+            &Procedure::Scheme(_, _, _) => write!(f, "Scheme")
         }
     }
 }

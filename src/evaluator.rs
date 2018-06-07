@@ -66,13 +66,34 @@ fn eval_proc(vars: &[Value], body: &[Value], args: &[Value], env: &mut Environme
 
 fn define_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
     if args.len() != 2 {
-        return Err("lambda requires 2 arguments".to_owned());
+        return Err("define requires 2 arguments".to_owned());
     }
 
     let var = match &args[0] {
         &Value::Symbol(ref s) => s.clone(),
         _ => return Err("First argument of define must be a symbol".to_owned())
     };
+
+    let exp = eval(&args[1], env)?;
+
+    env.kvs.insert(var, exp.clone());
+
+    return Ok(exp);
+}
+
+fn set_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
+    if args.len() != 2 {
+        return Err("set! requires 2 arguments".to_owned());
+    }
+
+    let var = match &args[0] {
+        &Value::Symbol(ref s) => s.clone(),
+        _ => return Err("First argument of set! must be a symbol".to_owned())
+    };
+
+    if !env.kvs.contains_key(&var) {
+        return Err(format!("Symbol {} is not defined", var));
+    }
 
     let exp = eval(&args[1], env)?;
 
@@ -91,6 +112,7 @@ fn eval_list(vs: &[Value], env: &mut Environment) -> Result<Value, String> {
             "if" => if_exp(args, env),
             "lambda" => lambda_exp(args, env),
             "define" => define_exp(args, env),
+            "set!" => set_exp(args, env),
             _ => Err(format!("Invalid application to symbol {}", s))
         },
         &Value::Procedure(Procedure::Builtin(f)) => {
@@ -120,6 +142,7 @@ pub fn eval(value: &Value, env: &mut Environment) -> Result<Value, String> {
             "if" => Ok(value.clone()),
             "lambda" => Ok(value.clone()),
             "define" => Ok(value.clone()),
+            "set!" => Ok(value.clone()),
             _ => env.kvs.get(s)
                     .ok_or(format!("Unbound variable {}", s))
                     .map(|v| v.clone())

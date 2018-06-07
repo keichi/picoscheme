@@ -1,5 +1,7 @@
 use std::fmt;
 
+use evaluator::Environment;
+
 pub type BuiltinFunc = fn (args: &[Value]) -> Result<Value, String>;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -16,14 +18,14 @@ pub enum Value {
 #[derive(Clone)]
 pub enum Procedure {
     Builtin(BuiltinFunc),
-    Scheme(Vec<Value>, Vec<Value>)
+    Scheme(Vec<Value>, Environment, Vec<Value>)
 }
 
 impl fmt::Debug for Procedure {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Procedure::Builtin(_) => write!(f, "Builtin"),
-            Procedure::Scheme(_, _) => write!(f, "Scheme")
+            Procedure::Scheme(_, _, _) => write!(f, "Scheme")
         }
     }
 }

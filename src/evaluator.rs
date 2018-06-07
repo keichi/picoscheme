@@ -26,7 +26,7 @@ fn if_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
     }
 }
 
-fn lambda_exp(args: &[Value], _env: &mut Environment) -> Result<Value, String> {
+fn lambda_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
     if args.len() < 2 {
         return Err("lambda requires more than 2 arguments".to_owned());
     }
@@ -38,7 +38,7 @@ fn lambda_exp(args: &[Value], _env: &mut Environment) -> Result<Value, String> {
 
     let body = args[1..].to_vec();
 
-    Ok(Value::Procedure(Procedure::Scheme(vars, body)))
+    Ok(Value::Procedure(Procedure::Scheme(vars, env.clone(), body)))
 }
 
 fn eval_proc(vars: &[Value], body: &[Value], args: &[Value], env: &mut Environment) -> Result<Value, String> {
@@ -121,11 +121,11 @@ fn eval_list(vs: &[Value], env: &mut Environment) -> Result<Value, String> {
 
             return f(&args?[..]);
         },
-        &Value::Procedure(Procedure::Scheme(ref vars, ref body)) => {
+        &Value::Procedure(Procedure::Scheme(ref vars, ref closure, ref body)) => {
             let args: Result<Vec<Value>, String>
                 = args.iter().map(|arg| eval(arg, env)).collect();
 
-            return eval_proc(&vars[..], &body[..], &args?[..], env);
+            return eval_proc(&vars[..], &body[..], &args?[..], &mut closure.clone());
         },
         v => Err(format!("Invalid application to {}", v))
     }
@@ -219,7 +219,10 @@ mod tests {
     #[test]
     fn test_lambda() {
         let cases = vec![
-            ("((lambda (x) (+ x x)) 4)", "8")
+            ("((lambda (x) (+ x x)) 4)", "8"),
+            ("((lambda (x) (+ (* x x) x 1)) 2)", "7"),
+            ("((lambda () 123))", "123"),
+            ("((lambda (x) (+ x 1) (* x 2)) 10)", "20")
         ];
 
         for (input, expected) in cases {

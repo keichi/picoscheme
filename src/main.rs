@@ -14,7 +14,17 @@ fn main() {
 
     let exps = vec![
         "(define fact (lambda (n) (if (= n 0) 1 (* n (fact (- n 1))))))",
-        "(fact 5)"
+        "(fact 5)",
+        r#"(define new-counter
+          (lambda ()
+           (define count 0)
+           (lambda () (set! count (+ count 1)) count)
+          )
+        )"#,
+        "(define c (new-counter))",
+        "(c)",
+        "(c)",
+        "(c)"
     ];
 
     for exp in exps {

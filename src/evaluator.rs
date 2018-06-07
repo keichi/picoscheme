@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use builtin::*;
@@ -12,7 +13,7 @@ fn quote_exp(args: &[Value], _: &Environment) -> Result<Value, String> {
     Ok(args[0].clone())
 }
 
-fn if_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
+fn if_exp(args: &[Value], env: &Environment) -> Result<Value, String> {
     if args.len() != 2 && args.len() != 3 {
         return Err("quote requires 2 or 3 arguments".to_owned())
     }
@@ -27,7 +28,7 @@ fn if_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
     }
 }
 
-fn lambda_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
+fn lambda_exp(args: &[Value], env: &Environment) -> Result<Value, String> {
     if args.len() < 2 {
         return Err("lambda requires more than 2 arguments".to_owned());
     }
@@ -42,30 +43,30 @@ fn lambda_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
     Ok(Value::Procedure(Procedure::Scheme(vars, env.clone(), body)))
 }
 
-fn eval_proc(vars: &[Value], body: &[Value], args: &[Value], env: &mut Environment) -> Result<Value, String> {
+fn eval_proc(vars: &[Value], body: &[Value], args: &[Value], env: &Environment) -> Result<Value, String> {
     if vars.len() != args.len() {
         return Err(format!("procedure requires {} arguments but {} supplied",
                            vars.len(), args.len()))
     }
 
-    let mut new_env = env.clone();
+    let new_env = env.clone();
 
     for (var, arg) in vars.iter().zip(args.iter()) {
         match var {
             &Value::Symbol(ref s) => {
-                new_env.kvs.insert(s.to_owned(), arg.clone());
+                new_env.define(s, arg);
             },
             _ => {}
         }
     }
 
     return body.iter()
-        .map(|e| eval(e, &mut new_env))
+        .map(|e| eval(e, &new_env))
         .collect::<Result<Vec<Value>, String>>()
         .map(|rs| rs.last().unwrap().clone());
 }
 
-fn define_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
+fn define_exp(args: &[Value], env: &Environment) -> Result<Value, String> {
     if args.len() != 2 {
         return Err("define requires 2 arguments".to_owned());
     }
@@ -82,7 +83,7 @@ fn define_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
     return Ok(exp);
 }
 
-fn set_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
+fn set_exp(args: &[Value], env: &Environment) -> Result<Value, String> {
     if args.len() != 2 {
         return Err("set! requires 2 arguments".to_owned());
     }
@@ -103,7 +104,7 @@ fn set_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
     return Ok(exp);
 }
 
-fn eval_list(vs: &[Value], env: &mut Environment) -> Result<Value, String> {
+fn eval_list(vs: &[Value], env: &Environment) -> Result<Value, String> {
     let f = &eval(&vs[0], env)?;
     let args = &vs[1..];
 
@@ -126,13 +127,13 @@ fn eval_list(vs: &[Value], env: &mut Environment) -> Result<Value, String> {
             let args: Result<Vec<Value>, String>
                 = args.iter().map(|arg| eval(arg, env)).collect();
 
-            return eval_proc(&vars[..], &body[..], &args?[..], &mut closure.clone());
+            return eval_proc(&vars[..], &body[..], &args?[..], &closure.clone());
         },
         v => Err(format!("Invalid application to {}", v))
     }
 }
 
-pub fn eval(value: &Value, env: &mut Environment) -> Result<Value, String> {
+pub fn eval(value: &Value, env: &Environment) -> Result<Value, String> {
     match value {
         &Value::List(ref vs) if vs.is_empty() => Ok(Value::List(Vec::new())),
         &Value::List(ref vs) => eval_list(vs, env),
@@ -157,7 +158,7 @@ pub fn eval(value: &Value, env: &mut Environment) -> Result<Value, String> {
 #[derive(Clone, Debug)]
 pub struct Environment {
     parent: Option<Rc<Environment>>,
-    kvs: HashMap<String, Value>
+    kvs: RefCell<HashMap<String, Value>>
 }
 
 impl Environment {
@@ -180,26 +181,55 @@ impl Environment {
                  (s.to_owned(), Value::Procedure(Procedure::Builtin(f))))
             .collect();
 
-        Environment { parent: None, kvs: kvs }
+        Environment {
+            parent: None,
+            kvs: RefCell::new(kvs)
+        }
     }
 
     pub fn new_child(parent: Rc<Environment>) -> Self {
-        Environment { parent: Some(parent.clone()), kvs: HashMap::new()}
+        Environment {
+            parent: Some(parent.clone()),
+            kvs: RefCell::new(HashMap::new())
+        }
     }
 
-    pub fn define(&mut self, key: &str, value: &Value) {
-        self.kvs.insert(key.to_owned(), value.clone());
+    pub fn define(&self, key: &str, value: &Value) {
+        self.kvs.borrow_mut().insert(key.to_owned(), value.clone());
     }
 
-    pub fn set(&mut self, key: &str, value: &Value) {
+    pub fn set(&self, key: &str, value: &Value) {
+        if self.kvs.borrow().contains_key(key) {
+            self.kvs.borrow_mut().insert(key.to_owned(), value.clone());
+            return;
+        }
+
+        match self.parent {
+            Some(ref p) => p.set(key, value),
+            None => {}
+        }
     }
 
-    pub fn get(&self, key: &str) -> Option<&Value> {
-        None
+    pub fn get(&self, key: &str) -> Option<Value> {
+        if self.kvs.borrow().contains_key(key) {
+            return self.kvs.borrow().get(key).cloned();
+        }
+
+        match self.parent {
+            Some(ref p) => p.get(key),
+            None => None
+        }
     }
 
-    pub fn has(&mut self, key: &str) -> bool {
-        false
+    pub fn has(&self, key: &str) -> bool {
+        if self.kvs.borrow().contains_key(key) {
+            return true;
+        }
+
+        match self.parent {
+            Some(ref p) => p.has(key),
+            None => false
+        }
     }
 }
 

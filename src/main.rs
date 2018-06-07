@@ -10,7 +10,7 @@ use parser::Parser;
 use evaluator::{eval, Environment};
 
 fn main() {
-    let mut env = Environment::new_global();
+    let env = Environment::new_global();
 
     let exps = vec![
         "(define fact (lambda (n) (if (= n 0) 1 (* n (fact (- n 1))))))",
@@ -34,8 +34,8 @@ fn main() {
 
         println!("{} =>", exp);
 
-        match parsed.and_then(|e| eval(&e, &mut env)) {
-            Ok(v) => println!("{}", v),
+        match parsed.and_then(|e| eval(&e, &env)) {
+            Ok(v) => { println!("{:?}", env); println!("{}", v); },
             Err(e) => println!("Error: {}", e)
         }
     }

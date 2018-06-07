@@ -1,5 +1,7 @@
 use std::fmt;
 
+pub type BuiltinFunc = fn (args: &[Value]) -> Result<Value, String>;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     List(Vec<Value>),
@@ -13,7 +15,7 @@ pub enum Value {
 
 #[derive(Clone)]
 pub enum Procedure {
-    Builtin(fn(&[Value]) -> Result<Value, String>),
+    Builtin(BuiltinFunc),
     Scheme(Vec<Value>, Vec<Value>)
 }
 

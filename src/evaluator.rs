@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use builtin::*;
-use value::{Procedure, Value};
+use value::{BuiltinFunc, Procedure, Value};
 
 fn quote_exp(args: &[Value], _: &Environment) -> Result<Value, String> {
     if args.len() != 1 {
@@ -137,21 +137,25 @@ pub struct Environment {
 
 impl Environment {
     pub fn new() -> Self {
-        let mut tmp = HashMap::new();
+        let builtins: Vec<(&str, BuiltinFunc)> =
+            vec![
+                ("+",    add_proc),
+                ("-",    sub_proc),
+                ("*",    mul_proc),
+                ("=",    eq_proc),
+                (">",    gt_proc),
+                ("<",    lt_proc),
+                ("car",  car_proc),
+                ("cdr",  cdr_proc),
+                ("cons", cons_proc)
+            ];
 
-        tmp.insert("+".to_owned(), Value::Procedure(Procedure::Builtin(add_proc)));
-        tmp.insert("-".to_owned(), Value::Procedure(Procedure::Builtin(sub_proc)));
-        tmp.insert("*".to_owned(), Value::Procedure(Procedure::Builtin(mul_proc)));
-        tmp.insert("=".to_owned(), Value::Procedure(Procedure::Builtin(eq_proc)));
-        tmp.insert(">".to_owned(), Value::Procedure(Procedure::Builtin(gt_proc)));
-        tmp.insert("<".to_owned(), Value::Procedure(Procedure::Builtin(lt_proc)));
-        tmp.insert("car".to_owned(), Value::Procedure(Procedure::Builtin(car_proc)));
-        tmp.insert("cdr".to_owned(), Value::Procedure(Procedure::Builtin(cdr_proc)));
-        tmp.insert("cons".to_owned(), Value::Procedure(Procedure::Builtin(cons_proc)));
+        let kvs = builtins.into_iter()
+            .map(|(s, f)|
+                 (s.to_owned(), Value::Procedure(Procedure::Builtin(f))))
+            .collect();
 
-        Environment {
-            kvs: tmp
-        }
+        Environment { kvs: kvs }
     }
 }
 

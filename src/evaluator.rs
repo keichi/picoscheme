@@ -65,6 +65,23 @@ fn eval_proc(vars: &[Value], body: &[Value], args: &[Value], env: &mut Environme
         .map(|rs| rs.last().unwrap().clone());
 }
 
+fn define_exp(args: &[Value], env: &mut Environment) -> Result<Value, String> {
+    if args.len() != 2 {
+        return Err("lambda requires 2 arguments".to_owned());
+    }
+
+    let var = match &args[0] {
+        &Value::Symbol(ref s) => s.clone(),
+        _ => return Err("First argument of define must be a symbol".to_owned())
+    };
+
+    let exp = eval(&args[1], env)?;
+
+    env.kvs.insert(var, exp);
+
+    Ok(Value::List(Vec::new()))
+}
+
 fn eval_list(vs: &[Value], env: &mut Environment) -> Result<Value, String> {
     let f = &eval(&vs[0], env)?;
     let args = &vs[1..];
@@ -74,6 +91,7 @@ fn eval_list(vs: &[Value], env: &mut Environment) -> Result<Value, String> {
             "quote" => quote_exp(args, env),
             "if" => if_exp(args, env),
             "lambda" => lambda_exp(args, env),
+            "define" => define_exp(args, env),
             _ => Err(format!("Invalid application to symbol {}", s))
         },
         &Value::Procedure(Procedure::Builtin(f)) => {
@@ -102,6 +120,7 @@ pub fn eval(value: &Value, env: &mut Environment) -> Result<Value, String> {
             "quote" => Ok(value.clone()),
             "if" => Ok(value.clone()),
             "lambda" => Ok(value.clone()),
+            "define" => Ok(value.clone()),
             _ => env.kvs.get(s)
                     .ok_or(format!("Unbound variable {}", s))
                     .map(|v| v.clone())
@@ -169,4 +188,9 @@ fn test_if() {
 #[test]
 fn test_lambda() {
     assert_eq!(rep("((lambda (x) (+ x x)) 4)"), "8");
+}
+
+#[test]
+fn test_define() {
+    assert_eq!(rep("(define a 1)"), "()");
 }

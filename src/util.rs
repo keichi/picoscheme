@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use lexer::Lexer;
 use parser::{Parser};
 use evaluator::{eval, Environment};
@@ -7,8 +9,8 @@ pub fn rep(sexp: &str) -> String {
     let lexer = Lexer::new(sexp);
     let mut parser = Parser::new(lexer);
     let parsed = parser.parse().expect("Failed to parse");
-    let mut env = Environment::new_global();
-    let result = eval(&parsed, &mut env).expect("Failed to evaluate");
+    let env = Environment::new_global();
+    let result = eval(&parsed, Rc::new(env)).expect("Failed to evaluate");
 
     format!("{}", result)
 }

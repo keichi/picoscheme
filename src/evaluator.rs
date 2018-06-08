@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use builtin::*;
 use value::{BuiltinFunc, Procedure, Value};
 
-fn quote_exp(args: &[Value], _: &Environment) -> Result<Value, String> {
+fn quote_exp(args: &[Value], _: Rc<Environment>) -> Result<Value, String> {
     if args.len() != 1 {
         return Err("quote requires 1 argument".to_owned())
     }
@@ -13,12 +13,12 @@ fn quote_exp(args: &[Value], _: &Environment) -> Result<Value, String> {
     Ok(args[0].clone())
 }
 
-fn if_exp(args: &[Value], env: &Environment) -> Result<Value, String> {
+fn if_exp(args: &[Value], env: Rc<Environment>) -> Result<Value, String> {
     if args.len() != 2 && args.len() != 3 {
         return Err("quote requires 2 or 3 arguments".to_owned())
     }
 
-    match eval(&args[0], env)? {
+    match eval(&args[0], env.clone())? {
         Value::Boolean(false) => if args.len() == 2 {
             Ok(Value::List(Vec::new()))
         } else {
@@ -28,7 +28,7 @@ fn if_exp(args: &[Value], env: &Environment) -> Result<Value, String> {
     }
 }
 
-fn lambda_exp(args: &[Value], env: &Environment) -> Result<Value, String> {
+fn lambda_exp(args: &[Value], env: Rc<Environment>) -> Result<Value, String> {
     if args.len() < 2 {
         return Err("lambda requires more than 2 arguments".to_owned());
     }
@@ -43,13 +43,13 @@ fn lambda_exp(args: &[Value], env: &Environment) -> Result<Value, String> {
     Ok(Value::Procedure(Procedure::Scheme(vars, env.clone(), body)))
 }
 
-fn eval_proc(vars: &[Value], body: &[Value], args: &[Value], env: &Environment) -> Result<Value, String> {
+fn eval_proc(vars: &[Value], body: &[Value], args: &[Value], env: Rc<Environment>) -> Result<Value, String> {
     if vars.len() != args.len() {
         return Err(format!("procedure requires {} arguments but {} supplied",
                            vars.len(), args.len()))
     }
 
-    let new_env = env.clone();
+    let new_env = Rc::new(Environment::new_child(env));
 
     for (var, arg) in vars.iter().zip(args.iter()) {
         match var {
@@ -61,12 +61,12 @@ fn eval_proc(vars: &[Value], body: &[Value], args: &[Value], env: &Environment) 
     }
 
     return body.iter()
-        .map(|e| eval(e, &new_env))
+        .map(|e| eval(e, new_env.clone()))
         .collect::<Result<Vec<Value>, String>>()
         .map(|rs| rs.last().unwrap().clone());
 }
 
-fn define_exp(args: &[Value], env: &Environment) -> Result<Value, String> {
+fn define_exp(args: &[Value], env: Rc<Environment>) -> Result<Value, String> {
     if args.len() != 2 {
         return Err("define requires 2 arguments".to_owned());
     }
@@ -76,14 +76,14 @@ fn define_exp(args: &[Value], env: &Environment) -> Result<Value, String> {
         _ => return Err("First argument of define must be a symbol".to_owned())
     };
 
-    let exp = eval(&args[1], env)?;
+    let exp = eval(&args[1], env.clone())?;
 
     env.define(var, &exp);
 
-    return Ok(exp);
+    return Ok(args[0].clone());
 }
 
-fn set_exp(args: &[Value], env: &Environment) -> Result<Value, String> {
+fn set_exp(args: &[Value], env: Rc<Environment>) -> Result<Value, String> {
     if args.len() != 2 {
         return Err("set! requires 2 arguments".to_owned());
     }
@@ -97,15 +97,15 @@ fn set_exp(args: &[Value], env: &Environment) -> Result<Value, String> {
         return Err(format!("Symbol {} is not defined", var));
     }
 
-    let exp = eval(&args[1], env)?;
+    let exp = eval(&args[1], env.clone())?;
 
     env.set(var, &exp);
 
     return Ok(exp);
 }
 
-fn eval_list(vs: &[Value], env: &Environment) -> Result<Value, String> {
-    let f = &eval(&vs[0], env)?;
+fn eval_list(vs: &[Value], env: Rc<Environment>) -> Result<Value, String> {
+    let f = &eval(&vs[0], env.clone())?;
     let args = &vs[1..];
 
     match f {
@@ -119,21 +119,21 @@ fn eval_list(vs: &[Value], env: &Environment) -> Result<Value, String> {
         },
         &Value::Procedure(Procedure::Builtin(f)) => {
             let args: Result<Vec<Value>, String>
-                = args.iter().map(|arg| eval(arg, env)).collect();
+                = args.iter().map(|arg| eval(arg, env.clone())).collect();
 
             return f(&args?[..]);
         },
         &Value::Procedure(Procedure::Scheme(ref vars, ref closure, ref body)) => {
             let args: Result<Vec<Value>, String>
-                = args.iter().map(|arg| eval(arg, env)).collect();
+                = args.iter().map(|arg| eval(arg, env.clone())).collect();
 
-            return eval_proc(&vars[..], &body[..], &args?[..], &closure.clone());
+            return eval_proc(&vars[..], &body[..], &args?[..], closure.clone());
         },
         v => Err(format!("Invalid application to {}", v))
     }
 }
 
-pub fn eval(value: &Value, env: &Environment) -> Result<Value, String> {
+pub fn eval(value: &Value, env: Rc<Environment>) -> Result<Value, String> {
     match value {
         &Value::List(ref vs) if vs.is_empty() => Ok(Value::List(Vec::new())),
         &Value::List(ref vs) => eval_list(vs, env),

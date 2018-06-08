@@ -1,4 +1,5 @@
 use std::fmt;
+use std::rc::Rc;
 
 use evaluator::Environment;
 
@@ -18,7 +19,7 @@ pub enum Value {
 #[derive(Clone)]
 pub enum Procedure {
     Builtin(BuiltinFunc),
-    Scheme(Vec<Value>, Environment, Vec<Value>)
+    Scheme(Vec<Value>, Rc<Environment>, Vec<Value>)
 }
 
 impl fmt::Debug for Procedure {

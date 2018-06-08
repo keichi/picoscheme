@@ -5,12 +5,14 @@ mod parser;
 mod evaluator;
 mod util;
 
+use std::rc::Rc;
+
 use lexer::Lexer;
 use parser::Parser;
 use evaluator::{eval, Environment};
 
 fn main() {
-    let env = Environment::new_global();
+    let env = Rc::new(Environment::new_global());
 
     let exps = vec![
         "(define fact (lambda (n) (if (= n 0) 1 (* n (fact (- n 1))))))",
@@ -24,7 +26,12 @@ fn main() {
         "(define c (new-counter))",
         "(c)",
         "(c)",
-        "(c)"
+        "(c)",
+        "count",
+        "n",
+        "(define c2 (new-counter))",
+        "(c2)",
+        "(c2)"
     ];
 
     for exp in exps {
@@ -34,8 +41,8 @@ fn main() {
 
         println!("{} =>", exp);
 
-        match parsed.and_then(|e| eval(&e, &env)) {
-            Ok(v) => { println!("{:?}", env); println!("{}", v); },
+        match parsed.and_then(|e| eval(&e, env.clone())) {
+            Ok(v) =>  println!("{}", v),
             Err(e) => println!("Error: {}", e)
         }
     }

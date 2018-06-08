@@ -326,13 +326,29 @@ mod tests {
     fn test_type_predicates() {
         assert_eq!(rep("(boolean? #t)"), "#t");
         assert_eq!(rep("(boolean? #f)"), "#t");
+        assert_eq!(rep("(boolean? 0)"), "#f");
+        assert_eq!(rep("(boolean? '())"), "#f");
+
         assert_eq!(rep("(pair? '(1 2 3))"), "#t");
         assert_eq!(rep("(pair? '(1 2 . 3))"), "#t");
+        assert_eq!(rep("(pair? '(a . b))"), "#t");
+        assert_eq!(rep("(pair? '(a b c))"), "#t");
         assert_eq!(rep("(pair? '())"), "#f");
+
         assert_eq!(rep("(symbol? 'a)"), "#t");
+        assert_eq!(rep("(symbol? (car '(a b)))"), "#t");
+        assert_eq!(rep("(symbol? \"bar\")"), "#f");
+        assert_eq!(rep("(symbol? 'nil)"), "#t");
+        assert_eq!(rep("(symbol? '())"), "#f");
+        assert_eq!(rep("(symbol? #f)"), "#f");
+
         assert_eq!(rep("(number? 123)"), "#t");
+
         assert_eq!(rep("(string? \"test\")"), "#t");
-        assert_eq!(rep("(procedure? (lambda () 1))"), "#t");
-        assert_eq!(rep("(procedure? cons)"), "#t");
+
+        assert_eq!(rep("(procedure? car)"), "#t");
+        assert_eq!(rep("(procedure? 'car)"), "#f");
+        assert_eq!(rep("(procedure? (lambda (x) (* x x)))"), "#t");
+        assert_eq!(rep("(procedure? '(lambda (x) (* x x)))"), "#f");
     }
 }

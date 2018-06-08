@@ -56,7 +56,7 @@ impl<T: Iterator<Item=Token>> Parser<T> {
 
     pub fn parse(&mut self) -> Result<Value, String> {
         let token = self.tokens.peek().cloned()
-                        .ok_or("Unexected end of input")?;
+                        .ok_or("Unexpected end of input")?;
 
         match token {
             Token::Boolean(b) => {

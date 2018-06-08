@@ -1,7 +1,7 @@
 use std::fmt;
 use std::rc::Rc;
 
-use evaluator::Environment;
+use environment::Environment;
 
 pub type BuiltinFunc = fn (args: &[Value]) -> Result<Value, String>;
 

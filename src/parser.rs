@@ -2,8 +2,8 @@ use std::iter::{Iterator, Peekable};
 use std::vec::Vec;
 
 use value::Value;
-
 use lexer::Token;
+
 // <datum> -> <boolean>
 //          | <number>
 //          | <string>

@@ -4,12 +4,14 @@ mod lexer;
 mod parser;
 mod evaluator;
 mod util;
+mod environment;
 
 use std::rc::Rc;
 
 use lexer::Lexer;
 use parser::Parser;
-use evaluator::{eval, Environment};
+use evaluator::eval;
+use environment::Environment;
 
 fn main() {
     let env = Rc::new(Environment::new_global());

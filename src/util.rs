@@ -1,8 +1,9 @@
 use std::rc::Rc;
 
 use lexer::Lexer;
-use parser::{Parser};
-use evaluator::{eval, Environment};
+use parser::Parser;
+use evaluator::eval;
+use environment::Environment;
 
 #[allow(dead_code)]
 pub fn rep(sexp: &str) -> String {

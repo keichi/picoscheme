@@ -156,6 +156,22 @@ pub fn cons_proc(args: &[Value]) -> Result<Value, String> {
     }
 }
 
+pub fn eqv_proc(args: &[Value]) -> Result<Value, String> {
+    if args.len() != 2 {
+        return Err("eqv? requires 2 arguments".to_owned())
+    }
+
+    let is_eqv = match (&args[0], &args[1]) {
+        (Value::Boolean(b1), Value::Boolean(b2)) => b1 == b2,
+        (Value::Integer(i1), Value::Integer(i2)) => i1 == i2,
+        (Value::Symbol(s1), Value::Symbol(s2)) => s1 == s2,
+        (Value::List(l1), Value::List(l2)) => l1.is_empty() && l2.is_empty(),
+        _ => false
+    };
+
+    Ok(Value::Boolean(is_eqv))
+}
+
 #[cfg(test)]
 mod tests {
     use util::rep;
@@ -213,5 +229,17 @@ mod tests {
         assert_eq!(rep("(> 2 1)"), "#t");
         assert_eq!(rep("(> 4 3 2 1)"), "#t");
         assert_eq!(rep("(> 1 2 3 2 1)"), "#f");
+    }
+
+    #[test]
+    fn test_eqv() {
+        assert_eq!(rep("(eqv? 'a 'a)"), "#t");
+        assert_eq!(rep("(eqv? 'a 'b)"), "#f");
+        assert_eq!(rep("(eqv? 2 2)"), "#t");
+        assert_eq!(rep("(eqv? '() '())"), "#t");
+        assert_eq!(rep("(eqv? 100000000 100000000)"), "#t");
+        assert_eq!(rep("(eqv? (cons 1 2) (cons 1 2))"), "#f");
+        assert_eq!(rep("(eqv? (lambda () 1) (lambda () 2))"), "#f");
+        assert_eq!(rep("(eqv? #f 'nil)"), "#f");
     }
 }

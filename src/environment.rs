@@ -23,7 +23,8 @@ impl Environment {
                 ("<",    lt_proc),
                 ("car",  car_proc),
                 ("cdr",  cdr_proc),
-                ("cons", cons_proc)
+                ("cons", cons_proc),
+                ("eqv?", eqv_proc)
             ];
 
         let kvs = builtins.into_iter()

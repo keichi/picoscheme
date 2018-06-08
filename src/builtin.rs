@@ -156,7 +156,7 @@ pub fn cons_proc(args: &[Value]) -> Result<Value, String> {
     }
 }
 
-pub fn eqv_proc(args: &[Value]) -> Result<Value, String> {
+pub fn is_eqv_proc(args: &[Value]) -> Result<Value, String> {
     if args.len() != 2 {
         return Err("eqv? requires 2 arguments".to_owned())
     }
@@ -170,6 +170,85 @@ pub fn eqv_proc(args: &[Value]) -> Result<Value, String> {
     };
 
     Ok(Value::Boolean(is_eqv))
+}
+
+pub fn is_boolean_proc(args: &[Value]) -> Result<Value, String> {
+    if args.len() != 1 {
+        return Err("boolean? requires 1 argument".to_owned())
+    }
+
+    Ok(Value::Boolean(
+        match &args[0] {
+            Value::Boolean(_) => true,
+            _ => false
+        }
+    ))
+}
+
+pub fn is_pair_proc(args: &[Value]) -> Result<Value, String> {
+    if args.len() != 1 {
+        return Err("pair? requires 1 argument".to_owned())
+    }
+
+    Ok(Value::Boolean(
+        match &args[0] {
+            Value::List(l) => !l.is_empty(),
+            Value::DottedList(l) => !l.is_empty(),
+            _ => false
+        }
+    ))
+}
+
+pub fn is_symbol_proc(args: &[Value]) -> Result<Value, String> {
+    if args.len() != 1 {
+        return Err("symbol? requires 1 argument".to_owned())
+    }
+
+    Ok(Value::Boolean(
+        match &args[0] {
+            Value::Symbol(_) => true,
+            _ => false
+        }
+    ))
+}
+
+pub fn is_number_proc(args: &[Value]) -> Result<Value, String> {
+    if args.len() != 1 {
+        return Err("number? requires 1 argument".to_owned())
+    }
+
+    Ok(Value::Boolean(
+        match &args[0] {
+            Value::Integer(_) => true,
+            _ => false
+        }
+    ))
+}
+
+pub fn is_string_proc(args: &[Value]) -> Result<Value, String> {
+    if args.len() != 1 {
+        return Err("string? requires 1 argument".to_owned())
+    }
+
+    Ok(Value::Boolean(
+        match &args[0] {
+            Value::String(_) => true,
+            _ => false
+        }
+    ))
+}
+
+pub fn is_procedure_proc(args: &[Value]) -> Result<Value, String> {
+    if args.len() != 1 {
+        return Err("procedure? requires 1 argument".to_owned())
+    }
+
+    Ok(Value::Boolean(
+        match &args[0] {
+            Value::Procedure(_) => true,
+            _ => false
+        }
+    ))
 }
 
 #[cfg(test)]
@@ -241,5 +320,19 @@ mod tests {
         assert_eq!(rep("(eqv? (cons 1 2) (cons 1 2))"), "#f");
         assert_eq!(rep("(eqv? (lambda () 1) (lambda () 2))"), "#f");
         assert_eq!(rep("(eqv? #f 'nil)"), "#f");
+    }
+
+    #[test]
+    fn test_type_predicates() {
+        assert_eq!(rep("(boolean? #t)"), "#t");
+        assert_eq!(rep("(boolean? #f)"), "#t");
+        assert_eq!(rep("(pair? '(1 2 3))"), "#t");
+        assert_eq!(rep("(pair? '(1 2 . 3))"), "#t");
+        assert_eq!(rep("(pair? '())"), "#f");
+        assert_eq!(rep("(symbol? 'a)"), "#t");
+        assert_eq!(rep("(number? 123)"), "#t");
+        assert_eq!(rep("(string? \"test\")"), "#t");
+        assert_eq!(rep("(procedure? (lambda () 1))"), "#t");
+        assert_eq!(rep("(procedure? cons)"), "#t");
     }
 }

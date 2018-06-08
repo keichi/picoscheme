@@ -24,7 +24,13 @@ impl Environment {
                 ("car",  car_proc),
                 ("cdr",  cdr_proc),
                 ("cons", cons_proc),
-                ("eqv?", eqv_proc)
+                ("eqv?", is_eqv_proc),
+                ("boolean?", is_boolean_proc),
+                ("pair?", is_pair_proc),
+                ("symbol?", is_symbol_proc),
+                ("number?", is_number_proc),
+                ("string?", is_string_proc),
+                ("procedure?", is_procedure_proc),
             ];
 
         let kvs = builtins.into_iter()

@@ -162,10 +162,10 @@ pub fn is_eqv_proc(args: &[Value]) -> Result<Value, String> {
     }
 
     let is_eqv = match (&args[0], &args[1]) {
-        (Value::Boolean(b1), Value::Boolean(b2)) => b1 == b2,
-        (Value::Integer(i1), Value::Integer(i2)) => i1 == i2,
-        (Value::Symbol(s1), Value::Symbol(s2)) => s1 == s2,
-        (Value::List(l1), Value::List(l2)) => l1.is_empty() && l2.is_empty(),
+        (&Value::Boolean(b1), &Value::Boolean(b2)) => b1 == b2,
+        (&Value::Integer(i1), &Value::Integer(i2)) => i1 == i2,
+        (&Value::Symbol(ref s1), &Value::Symbol(ref s2)) => s1 == s2,
+        (&Value::List(ref l1), &Value::List(ref l2)) => l1.is_empty() && l2.is_empty(),
         _ => false
     };
 
@@ -179,7 +179,7 @@ pub fn is_boolean_proc(args: &[Value]) -> Result<Value, String> {
 
     Ok(Value::Boolean(
         match &args[0] {
-            Value::Boolean(_) => true,
+            &Value::Boolean(_) => true,
             _ => false
         }
     ))
@@ -192,8 +192,8 @@ pub fn is_pair_proc(args: &[Value]) -> Result<Value, String> {
 
     Ok(Value::Boolean(
         match &args[0] {
-            Value::List(l) => !l.is_empty(),
-            Value::DottedList(l) => !l.is_empty(),
+            &Value::List(ref l) => !l.is_empty(),
+            &Value::DottedList(ref l) => !l.is_empty(),
             _ => false
         }
     ))
@@ -206,7 +206,7 @@ pub fn is_symbol_proc(args: &[Value]) -> Result<Value, String> {
 
     Ok(Value::Boolean(
         match &args[0] {
-            Value::Symbol(_) => true,
+            &Value::Symbol(_) => true,
             _ => false
         }
     ))
@@ -219,7 +219,7 @@ pub fn is_number_proc(args: &[Value]) -> Result<Value, String> {
 
     Ok(Value::Boolean(
         match &args[0] {
-            Value::Integer(_) => true,
+            &Value::Integer(_) => true,
             _ => false
         }
     ))
@@ -232,7 +232,7 @@ pub fn is_string_proc(args: &[Value]) -> Result<Value, String> {
 
     Ok(Value::Boolean(
         match &args[0] {
-            Value::String(_) => true,
+            &Value::String(_) => true,
             _ => false
         }
     ))
@@ -245,7 +245,7 @@ pub fn is_procedure_proc(args: &[Value]) -> Result<Value, String> {
 
     Ok(Value::Boolean(
         match &args[0] {
-            Value::Procedure(_) => true,
+            &Value::Procedure(_) => true,
             _ => false
         }
     ))

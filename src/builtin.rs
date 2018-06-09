@@ -251,6 +251,30 @@ pub fn is_procedure_proc(args: &[Value]) -> Result<Value, String> {
     ))
 }
 
+pub fn string_to_number_proc(args: &[Value]) -> Result<Value, String> {
+    if args.len() != 1 {
+        return Err("string->number requires 1 argument".to_owned())
+    }
+
+    match &args[0] {
+        &Value::String(ref s) => s.parse().map(|i| Value::Integer(i))
+                                          .or(Ok(Value::Boolean(false))),
+        _ => Err("string->number requires a string".to_owned())
+    }
+}
+
+pub fn number_to_string_proc(args: &[Value]) -> Result<Value, String> {
+    if args.len() != 1 {
+        return Err("number->string requires 1 argument".to_owned())
+    }
+
+    match &args[0] {
+        &Value::Integer(i) => Ok(Value::String(i.to_string())),
+        _ => Err("number->string requires a number".to_owned())
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use util::rep;
@@ -350,5 +374,13 @@ mod tests {
         assert_eq!(rep("(procedure? 'car)"), "#f");
         assert_eq!(rep("(procedure? (lambda (x) (* x x)))"), "#t");
         assert_eq!(rep("(procedure? '(lambda (x) (* x x)))"), "#f");
+    }
+
+    #[test]
+    fn test_type_conversions() {
+        assert_eq!(rep("(number->string 123)"), "\"123\"");
+
+        assert_eq!(rep("(string->number \"456\")"), "456");
+        assert_eq!(rep("(string->number \"abc\")"), "#f");
     }
 }

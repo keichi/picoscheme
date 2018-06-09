@@ -31,6 +31,8 @@ impl Environment {
                 ("number?", is_number_proc),
                 ("string?", is_string_proc),
                 ("procedure?", is_procedure_proc),
+                ("string->number", string_to_number_proc),
+                ("number->string", number_to_string_proc)
             ];
 
         let kvs = builtins.into_iter()

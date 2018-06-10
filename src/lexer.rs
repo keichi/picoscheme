@@ -21,27 +21,27 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> iter::Iterator for Lexer<'a> {
-    type Item = Token;
+    type Item = Result<Token, String>;
 
-    fn next(&mut self) -> Option<Token> {
+    fn next(&mut self) -> Option<Result<Token, String>> {
         self.skip_space();
 
         match self.iter.peek().cloned() {
             Some('(') => {
                 self.iter.next();
-                Some(Token::OpenParen)
+                Some(Ok(Token::OpenParen))
             },
             Some(')') => {
                 self.iter.next();
-                Some(Token::CloseParen)
+                Some(Ok(Token::CloseParen))
             },
             Some('\'') => {
                 self.iter.next();
-                Some(Token::Quote)
+                Some(Ok(Token::Quote))
             }
             Some('`') => {
                 self.iter.next();
-                Some(Token::BackQuote)
+                Some(Ok(Token::BackQuote))
             },
             Some(',') => {
                 self.iter.next();
@@ -49,14 +49,14 @@ impl<'a> iter::Iterator for Lexer<'a> {
                 match self.iter.peek().cloned() {
                     Some('@') => {
                         self.iter.next();
-                        Some(Token::CommaAt)
+                        Some(Ok(Token::CommaAt))
                     },
-                    _ => Some(Token::Comma)
+                    _ => Some(Ok(Token::Comma))
                 }
             },
             Some('.') => {
                 self.iter.next();
-                Some(Token::Dot)
+                Some(Ok(Token::Dot))
             },
             Some('"') => self.lex_string(),
             Some('#') => self.lex_boolean(),
@@ -64,7 +64,8 @@ impl<'a> iter::Iterator for Lexer<'a> {
             Some(c) if self.is_initial(c) => self.lex_identifier(),
             Some(c) if self.is_peculiar_identifier(c) =>
                 self.lex_peculiar_identifier(),
-            _ => None
+            Some(c)=> Some(Err(format!("Unexpected character {}", c))),
+            None => None
         }
     }
 }
@@ -107,7 +108,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn lex_string(&mut self) -> Option<Token> {
+    fn lex_string(&mut self) -> Option<Result<Token, String>> {
         let mut s = String::new();
 
         self.iter.next();
@@ -126,20 +127,21 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        Some(Token::String(s))
+        Some(Ok(Token::String(s)))
     }
 
-    fn lex_boolean(&mut self) -> Option<Token> {
+    fn lex_boolean(&mut self) -> Option<Result<Token, String>> {
         self.iter.next();
 
         match self.iter.next() {
-            Some('t') => Some(Token::Boolean(true)),
-            Some('f') => Some(Token::Boolean(false)),
-            _ => None
+            Some('t') => Some(Ok(Token::Boolean(true))),
+            Some('f') => Some(Ok(Token::Boolean(false))),
+            Some(c) => Some(Err(format!("Unexpected character {}", c))),
+            None => None
         }
     }
 
-    fn lex_integer(&mut self) -> Option<Token> {
+    fn lex_integer(&mut self) -> Option<Result<Token, String>> {
         let mut s = String::new();
 
         loop {
@@ -152,10 +154,11 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        s.parse().ok().map(|i| Token::Integer(i))
+        Some(s.parse().map(|i| Token::Integer(i))
+                      .map_err(|e| e.to_string()))
     }
 
-    fn lex_identifier(&mut self) -> Option<Token> {
+    fn lex_identifier(&mut self) -> Option<Result<Token, String>> {
         let mut s = String::new();
 
         match self.iter.next() {
@@ -173,13 +176,13 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        Some(Token::Identifier(s))
+        Some(Ok(Token::Identifier(s)))
     }
 
-    fn lex_peculiar_identifier(&mut self) -> Option<Token> {
+    fn lex_peculiar_identifier(&mut self) -> Option<Result<Token, String>> {
         let c = self.iter.next();
 
-        c.map(|c| Token::Identifier(c.to_string()))
+        c.map(|c| Ok(Token::Identifier(c.to_string())))
     }
 }
 
@@ -197,7 +200,7 @@ mod tests {
         ];
 
         for (actual, expected) in lexer.zip(expected) {
-            assert_eq!(actual, expected);
+            assert_eq!(actual.unwrap(), expected);
         }
     }
 
@@ -210,7 +213,7 @@ mod tests {
         ];
 
         for (actual, expected) in lexer.zip(expected) {
-            assert_eq!(actual, expected);
+            assert_eq!(actual.unwrap(), expected);
         }
     }
 
@@ -220,7 +223,7 @@ mod tests {
         let expected = vec![Token::Integer(123)];
 
         for (actual, expected) in lexer.zip(expected) {
-            assert_eq!(actual, expected);
+            assert_eq!(actual.unwrap(), expected);
         }
     }
 
@@ -230,7 +233,7 @@ mod tests {
         let expected = vec![Token::String("test".to_owned())];
 
         for (actual, expected) in lexer.zip(expected) {
-            assert_eq!(actual, expected);
+            assert_eq!(actual.unwrap(), expected);
         }
     }
 
@@ -248,7 +251,7 @@ mod tests {
         ];
 
         for (actual, expected) in lexer.zip(expected) {
-            assert_eq!(actual, expected);
+            assert_eq!(actual.unwrap(), expected);
         }
     }
 }

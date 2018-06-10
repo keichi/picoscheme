@@ -15,11 +15,11 @@ use lexer::Token;
 //          | , <datum>
 //          | ,@ <datum>
 
-pub struct Parser<T: Iterator<Item=Token>> {
+pub struct Parser<T: Iterator<Item=Result<Token, String>>> {
     tokens: Peekable<T>
 }
 
-impl<T: Iterator<Item=Token>> Parser<T> {
+impl<T: Iterator<Item=Result<Token, String>>> Parser<T> {
     pub fn new(lexer: T) -> Self {
         Parser {
             tokens: lexer.peekable()
@@ -33,11 +33,11 @@ impl<T: Iterator<Item=Token>> Parser<T> {
 
         loop {
             match self.tokens.peek().cloned() {
-                Some(Token::CloseParen) => {
+                Some(Ok(Token::CloseParen)) => {
                     self.tokens.next();
                     return Ok(Value::List(items));
                 },
-                Some(Token::Dot) => {
+                Some(Ok(Token::Dot)) => {
                     if items.is_empty() {
                         return Err("Unexpected dot".to_owned())
                     }
@@ -46,9 +46,10 @@ impl<T: Iterator<Item=Token>> Parser<T> {
                     items.push(self.parse()?);
                     return Ok(Value::DottedList(items));
                 },
-                Some(_) => {
+                Some(Ok(_)) => {
                     items.push(self.parse()?);
                 },
+                Some(Err(e)) => return Err(e),
                 None => return Err("Unexepcted end of list".to_owned())
             }
         }
@@ -56,7 +57,8 @@ impl<T: Iterator<Item=Token>> Parser<T> {
 
     pub fn parse(&mut self) -> Result<Value, String> {
         let token = self.tokens.peek().cloned()
-                        .ok_or("Unexpected end of input")?;
+                        .ok_or("Unexpected end of input".to_owned())
+                        .and_then(|r| r)?;
 
         match token {
             Token::Boolean(b) => {
@@ -108,7 +110,7 @@ impl<T: Iterator<Item=Token>> Parser<T> {
                     )
                 )
             }
-            _ => Err("Unexepcted token".to_owned())
+            _ => Err(format!("Unexepcted token {:?}", token))
         }
     }
 }
@@ -120,22 +122,22 @@ mod tests {
     #[test]
     fn test_parse_literal() {
         let tokens = vec![Token::Boolean(true)];
-        let mut parser = Parser::new(tokens.into_iter());
+        let mut parser = Parser::new(tokens.into_iter().map(Ok));
 
         assert_eq!(Value::Boolean(true), parser.parse().unwrap());
 
         let tokens = vec![Token::Identifier("a".to_owned())];
-        let mut parser = Parser::new(tokens.into_iter());
+        let mut parser = Parser::new(tokens.into_iter().map(Ok));
 
         assert_eq!(Value::Symbol("a".to_owned()), parser.parse().unwrap());
 
         let tokens = vec![Token::Integer(123)];
-        let mut parser = Parser::new(tokens.into_iter());
+        let mut parser = Parser::new(tokens.into_iter().map(Ok));
 
         assert_eq!(Value::Integer(123), parser.parse().unwrap());
 
         let tokens = vec![Token::String("b".to_owned())];
-        let mut parser = Parser::new(tokens.into_iter());
+        let mut parser = Parser::new(tokens.into_iter().map(Ok));
 
         assert_eq!(Value::String("b".to_owned()), parser.parse().unwrap());
     }
@@ -149,7 +151,7 @@ mod tests {
             Token::Identifier("b".to_owned()),
             Token::CloseParen
         ];
-        let mut parser = Parser::new(tokens.into_iter());
+        let mut parser = Parser::new(tokens.into_iter().map(Ok));
 
         assert_eq!(
             Value::List(vec![
@@ -173,7 +175,7 @@ mod tests {
             Token::CloseParen,
             Token::CloseParen
         ];
-        let mut parser = Parser::new(tokens.into_iter());
+        let mut parser = Parser::new(tokens.into_iter().map(Ok));
 
         assert_eq!(
             Value::List(vec![
@@ -197,7 +199,7 @@ mod tests {
             Token::Integer(456),
             Token::CloseParen
         ];
-        let mut parser = Parser::new(tokens.into_iter());
+        let mut parser = Parser::new(tokens.into_iter().map(Ok));
 
         assert_eq!(
             Value::DottedList(vec![

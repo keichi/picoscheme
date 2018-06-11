@@ -112,6 +112,8 @@ pub fn car_proc(args: &[Value]) -> Result<Value, String> {
     }
 
     match &args[0] {
+        &Value::List(ref vs) if vs.is_empty() =>
+            Err("Cannot take car of empty list".to_owned()),
         &Value::List(ref vs) => Ok(vs[0].clone()),
         &Value::DottedList(ref vs) => Ok(vs[0].clone()),
         _ => Err("car requires list".to_owned())

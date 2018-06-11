@@ -58,10 +58,10 @@ fn eval_proc(vars: &[Value], body: &[Value], args: &[Value], env: Rc<Environment
         }
     }
 
-    return body.iter()
+    body.iter()
         .map(|e| eval(e, new_env.clone()))
         .collect::<Result<Vec<Value>, String>>()
-        .map(|rs| rs.last().unwrap().clone());
+        .map(|rs| rs.last().unwrap().clone())
 }
 
 fn define_exp(args: &[Value], env: Rc<Environment>) -> Result<Value, String> {
@@ -78,7 +78,7 @@ fn define_exp(args: &[Value], env: Rc<Environment>) -> Result<Value, String> {
 
     env.define(var, &exp);
 
-    return Ok(args[0].clone());
+    Ok(args[0].clone())
 }
 
 fn set_exp(args: &[Value], env: Rc<Environment>) -> Result<Value, String> {

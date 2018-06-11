@@ -32,35 +32,36 @@ impl<T: Iterator<Item=Result<Token, String>>> Parser<T> {
         let mut items = Vec::new();
 
         loop {
-            match self.tokens.peek().cloned() {
-                Some(Ok(Token::CloseParen)) => {
+            let token = self.tokens.peek().cloned()
+                .unwrap_or(Err("Unclosed list".to_owned()))?;
+
+            match token {
+                Token::CloseParen => {
                     self.tokens.next();
                     return Ok(Value::List(items));
                 },
-                Some(Ok(Token::Dot)) => {
+                Token::Dot => {
                     if items.is_empty() {
                         return Err("Unexpected dot".to_owned())
                     }
 
                     self.tokens.next();
                     items.push(self.parse()?);
+
                     return Ok(Value::DottedList(items));
                 },
-                Some(Ok(_)) => {
+                _ => {
                     items.push(self.parse()?);
-                },
-                Some(Err(e)) => return Err(e),
-                None => return Err("Unexepcted end of list".to_owned())
+                }
             }
         }
     }
 
     pub fn parse(&mut self) -> Result<Value, String> {
         let token = self.tokens.peek().cloned()
-                        .ok_or("Unexpected end of input".to_owned())
-                        .and_then(|r| r)?;
+            .unwrap_or(Err("Unexpected end of input".to_owned()));
 
-        match token {
+        token.and_then(|tok| match tok {
             Token::Boolean(b) => {
                 self.tokens.next();
                 Ok(Value::Boolean(b))
@@ -110,8 +111,8 @@ impl<T: Iterator<Item=Result<Token, String>>> Parser<T> {
                     )
                 )
             }
-            _ => Err(format!("Unexepcted token {:?}", token))
-        }
+            _ => Err(format!("Unexepcted token {:?}", tok))
+        })
     }
 }
 

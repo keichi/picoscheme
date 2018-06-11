@@ -24,49 +24,51 @@ impl<'a> iter::Iterator for Lexer<'a> {
     type Item = Result<Token, String>;
 
     fn next(&mut self) -> Option<Result<Token, String>> {
-        self.skip_space();
+        match self.skip_space() {
+            Err(e) => return Some(Err(e)),
+            _ => {}
+        }
 
-        match self.iter.peek().cloned() {
-            Some('(') => {
-                self.iter.next();
-                Some(Ok(Token::OpenParen))
+        self.peek_char().map(|r| r.and_then(|c| match c {
+            '(' => {
+                self.advance_char();
+                Ok(Token::OpenParen)
             },
-            Some(')') => {
-                self.iter.next();
-                Some(Ok(Token::CloseParen))
+            ')' => {
+                self.advance_char();
+                Ok(Token::CloseParen)
             },
-            Some('\'') => {
-                self.iter.next();
-                Some(Ok(Token::Quote))
-            }
-            Some('`') => {
-                self.iter.next();
-                Some(Ok(Token::BackQuote))
+            '\'' => {
+                self.advance_char();
+                Ok(Token::Quote)
             },
-            Some(',') => {
-                self.iter.next();
+            '`' => {
+                self.advance_char();
+                Ok(Token::BackQuote)
+            },
+            ',' => {
+                self.advance_char();
 
-                match self.iter.peek().cloned() {
-                    Some('@') => {
-                        self.iter.next();
-                        Some(Ok(Token::CommaAt))
+                match self.peek_char() {
+                    Some(Ok('@')) => {
+                        self.advance_char();
+                        Ok(Token::CommaAt)
                     },
-                    _ => Some(Ok(Token::Comma))
+                    _ => Ok(Token::Comma)
                 }
             },
-            Some('.') => {
-                self.iter.next();
-                Some(Ok(Token::Dot))
+            '.' => {
+                self.advance_char();
+                Ok(Token::Dot)
             },
-            Some('"') => self.lex_string(),
-            Some('#') => self.lex_boolean(),
-            Some(c) if c.is_ascii_digit() => self.lex_integer(),
-            Some(c) if self.is_initial(c) => self.lex_identifier(),
-            Some(c) if self.is_peculiar_identifier(c) =>
+            '"' => self.lex_string(),
+            '#' => self.lex_boolean(),
+            c if c.is_ascii_digit() => self.lex_integer(),
+            c if self.is_initial(c) => self.lex_identifier(),
+            c if self.is_peculiar_identifier(c) =>
                 self.lex_peculiar_identifier(),
-            Some(c)=> Some(Err(format!("Unexpected character {}", c))),
-            None => None
-        }
+            c => Err(format!("Unexpected character {}", c))
+        }))
     }
 }
 
@@ -75,6 +77,14 @@ impl<'a> Lexer<'a> {
         Lexer {
             iter: s.chars().peekable()
         }
+    }
+
+    fn peek_char(&mut self) -> Option<Result<char, String>> {
+        self.iter.peek().cloned().map(Ok)
+    }
+
+    fn advance_char(&mut self) -> Option<Result<char, String>> {
+        self.iter.next().map(Ok)
     }
 
     fn is_initial(&self, c: char) -> bool {
@@ -97,92 +107,90 @@ impl<'a> Lexer<'a> {
         "+-".contains(c)
     }
 
-    fn skip_space(&mut self) {
+    fn skip_space(&mut self) -> Result<(), String> {
         loop {
-            match self.iter.peek().cloned() {
-                Some(c) if c.is_ascii_whitespace() => {
-                    self.iter.next();
+            match self.peek_char() {
+                Some(Ok(c)) if c.is_ascii_whitespace() => {
+                    self.advance_char();
                 },
-                _ => break
+                Some(Err(e)) => return Err(e),
+                _ => return Ok(())
             }
         }
     }
 
-    fn lex_string(&mut self) -> Option<Result<Token, String>> {
+    fn lex_string(&mut self) -> Result<Token, String> {
         let mut s = String::new();
 
-        self.iter.next();
+        self.advance_char();
 
         loop {
-            match self.iter.peek().cloned() {
-                Some('"') => {
-                    self.iter.next();
-                    break
+            match self.peek_char() {
+                Some(Ok('"')) => {
+                    self.advance_char();
+                    return Ok(Token::String(s))
                 },
-                Some(c) => {
-                    self.iter.next();
+                Some(Ok(c)) => {
+                    self.advance_char();
                     s.push(c)
                 },
-                _ => break
+                Some(Err(e)) => return Err(e),
+                None => return Err("Unclosed string literal".to_owned())
             }
         }
-
-        Some(Ok(Token::String(s)))
     }
 
-    fn lex_boolean(&mut self) -> Option<Result<Token, String>> {
-        self.iter.next();
+    fn lex_boolean(&mut self) -> Result<Token, String> {
+        self.advance_char();
 
-        match self.iter.next() {
-            Some('t') => Some(Ok(Token::Boolean(true))),
-            Some('f') => Some(Ok(Token::Boolean(false))),
-            Some(c) => Some(Err(format!("Unexpected character {}", c))),
-            None => None
-        }
+        self.advance_char()
+            .unwrap_or(Err("Unexpected end of input".to_owned()))
+            .and_then(|c| match c {
+                't' => Ok(Token::Boolean(true)),
+                'f' => Ok(Token::Boolean(false)),
+                c => Err(format!("Unexpected character {}", c))
+            })
     }
 
-    fn lex_integer(&mut self) -> Option<Result<Token, String>> {
+    fn lex_integer(&mut self) -> Result<Token, String> {
         let mut s = String::new();
 
         loop {
-            match self.iter.peek().cloned() {
-                Some(c) if c.is_ascii_digit() => {
+            match self.peek_char() {
+                Some(Ok(c)) if c.is_ascii_digit() => {
                     s.push(c);
-                    self.iter.next();
+                    self.advance_char();
                 },
-                _ => break
+                Some(Err(e)) => return Err(e),
+                _ => return s.parse().map(|i| Token::Integer(i))
+                                     .map_err(|e| e.to_string())
             }
         }
-
-        Some(s.parse().map(|i| Token::Integer(i))
-                      .map_err(|e| e.to_string()))
     }
 
-    fn lex_identifier(&mut self) -> Option<Result<Token, String>> {
+    fn lex_identifier(&mut self) -> Result<Token, String> {
         let mut s = String::new();
 
-        match self.iter.next() {
-            Some(c) => s.push(c),
-            None => return None
+        if let Some(c) = self.advance_char() {
+            s.push(c?);
         }
 
         loop {
-            match self.iter.peek().cloned() {
-                Some(c) if self.is_subsequent(c) => {
+            match self.peek_char() {
+                Some(Ok(c)) if self.is_subsequent(c) => {
                     s.push(c);
-                    self.iter.next();
+                    self.advance_char();
                 },
-                _ => break
+                Some(Err(e)) => return Err(e),
+                _ => return Ok(Token::Identifier(s))
             }
         }
-
-        Some(Ok(Token::Identifier(s)))
     }
 
-    fn lex_peculiar_identifier(&mut self) -> Option<Result<Token, String>> {
-        let c = self.iter.next();
+    fn lex_peculiar_identifier(&mut self) -> Result<Token, String> {
+        let c = self.advance_char();
 
-        c.map(|c| Ok(Token::Identifier(c.to_string())))
+        Ok(Token::Identifier(c.unwrap()?.to_string()))
     }
 }
 

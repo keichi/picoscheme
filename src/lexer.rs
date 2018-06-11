@@ -1,5 +1,5 @@
-use std::iter;
-use std::str;
+use std::iter::{Iterator, Peekable};
+use std::str::Chars;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
@@ -17,10 +17,10 @@ pub enum Token {
 }
 
 pub struct Lexer<'a> {
-    iter: iter::Peekable<str::Chars<'a>>
+    iter: Peekable<Chars<'a>>
 }
 
-impl<'a> iter::Iterator for Lexer<'a> {
+impl<'a> Iterator for Lexer<'a> {
     type Item = Result<Token, String>;
 
     fn next(&mut self) -> Option<Result<Token, String>> {

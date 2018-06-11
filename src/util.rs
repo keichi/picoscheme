@@ -1,3 +1,4 @@
+use std::io::Cursor;
 use std::rc::Rc;
 
 use lexer::Lexer;
@@ -7,7 +8,8 @@ use environment::Environment;
 
 #[allow(dead_code)]
 pub fn rep(sexp: &str) -> String {
-    let lexer = Lexer::new(sexp);
+    let r = Cursor::new(sexp.clone().as_bytes());
+    let lexer = Lexer::new(r);
     let mut parser = Parser::new(lexer);
     let parsed = parser.parse().expect("Failed to parse");
     let env = Environment::new_global();

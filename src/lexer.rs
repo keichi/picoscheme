@@ -1,5 +1,6 @@
+use std::io::BufRead;
 use std::iter::{Iterator, Peekable};
-use std::str::Chars;
+use std::vec;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
@@ -16,11 +17,48 @@ pub enum Token {
     Dot
 }
 
-pub struct Lexer<'a> {
-    iter: Peekable<Chars<'a>>
+struct ReadChar<T: BufRead> {
+    reader: T,
+    chars: vec::IntoIter<char>
 }
 
-impl<'a> Iterator for Lexer<'a> {
+impl<T: BufRead> Iterator for ReadChar<T> {
+    type Item = Result<char, String>;
+
+    fn next(&mut self) -> Option<Result<char, String>> {
+        if let Some(c) = self.chars.next() {
+            return Some(Ok(c))
+        }
+
+        let mut line = String::new();
+
+        match self.reader.read_line(&mut line) {
+            Ok(0) => None,
+            Ok(_) => {
+                self.chars = line.chars().collect::<Vec<char>>()
+                                         .into_iter();
+                self.chars.next().map(|c| Ok(c))
+            },
+            Err(e) => Some(Err(e.to_string()))
+        }
+    }
+}
+
+impl<T: BufRead> ReadChar<T> {
+    fn new(r: T) -> Self {
+        ReadChar {
+            reader: r,
+            chars: Vec::new().into_iter()
+        }
+    }
+}
+
+
+pub struct Lexer<T: BufRead> {
+    iter: Peekable<ReadChar<T>>
+}
+
+impl<T: BufRead> Iterator for Lexer<T> {
     type Item = Result<Token, String>;
 
     fn next(&mut self) -> Option<Result<Token, String>> {
@@ -72,19 +110,21 @@ impl<'a> Iterator for Lexer<'a> {
     }
 }
 
-impl<'a> Lexer<'a> {
-    pub fn new(s: &'a str) -> Self {
+impl<T: BufRead> Lexer<T> {
+    pub fn new(r: T) -> Self {
+        let reader = ReadChar::new(r);
+
         Lexer {
-            iter: s.chars().peekable()
+            iter: reader.peekable()
         }
     }
 
     fn peek_char(&mut self) -> Option<Result<char, String>> {
-        self.iter.peek().cloned().map(Ok)
+        self.iter.peek().cloned()
     }
 
     fn advance_char(&mut self) -> Option<Result<char, String>> {
-        self.iter.next().map(Ok)
+        self.iter.next()
     }
 
     fn is_initial(&self, c: char) -> bool {

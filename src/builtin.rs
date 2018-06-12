@@ -70,13 +70,13 @@ pub fn eq_proc(args: &[Value]) -> Result<Value, String> {
 
 pub fn lt_proc(args: &[Value]) -> Result<Value, String> {
     if args.len() < 2 {
-        return Err("= requires 2 or more arguments".to_owned());
+        return Err("< requires 2 or more arguments".to_owned());
     }
 
     let vs = args.iter()
         .map(|arg| match arg {
             &Value::Integer(i) => Ok(i),
-            v => Err(format!("Cannot apply non-integer {} to =", v))
+            v => Err(format!("Cannot apply non-integer {} to <", v))
         })
         .collect::<Result<Vec<i64>, String>>()?;
 
@@ -89,13 +89,13 @@ pub fn lt_proc(args: &[Value]) -> Result<Value, String> {
 
 pub fn gt_proc(args: &[Value]) -> Result<Value, String> {
     if args.len() < 2 {
-        return Err("= requires 2 or more arguments".to_owned());
+        return Err("> requires 2 or more arguments".to_owned());
     }
 
     let vs = args.iter()
         .map(|arg| match arg {
             &Value::Integer(i) => Ok(i),
-            v => Err(format!("Cannot apply non-integer {} to =", v))
+            v => Err(format!("Cannot apply non-integer {} to >", v))
         })
         .collect::<Result<Vec<i64>, String>>()?;
 
@@ -105,6 +105,45 @@ pub fn gt_proc(args: &[Value]) -> Result<Value, String> {
         .all(|(v1, v2)| v1 > v2)
     ));
 }
+
+pub fn le_proc(args: &[Value]) -> Result<Value, String> {
+    if args.len() < 2 {
+        return Err("<= requires 2 or more arguments".to_owned());
+    }
+
+    let vs = args.iter()
+        .map(|arg| match arg {
+            &Value::Integer(i) => Ok(i),
+            v => Err(format!("Cannot apply non-integer {} to <=", v))
+        })
+        .collect::<Result<Vec<i64>, String>>()?;
+
+    return Ok(Value::Boolean(
+        vs.iter()
+        .zip(vs.iter().skip(1))
+        .all(|(v1, v2)| v1 <= v2)
+    ));
+}
+
+pub fn ge_proc(args: &[Value]) -> Result<Value, String> {
+    if args.len() < 2 {
+        return Err(">= requires 2 or more arguments".to_owned());
+    }
+
+    let vs = args.iter()
+        .map(|arg| match arg {
+            &Value::Integer(i) => Ok(i),
+            v => Err(format!("Cannot apply non-integer {} to >=", v))
+        })
+        .collect::<Result<Vec<i64>, String>>()?;
+
+    return Ok(Value::Boolean(
+        vs.iter()
+        .zip(vs.iter().skip(1))
+        .all(|(v1, v2)| v1 >= v2)
+    ));
+}
+
 
 pub fn car_proc(args: &[Value]) -> Result<Value, String> {
     if args.len() != 1 {
@@ -364,7 +403,19 @@ mod tests {
             ("(> 1 2)",         "#f"),
             ("(> 2 1)",         "#t"),
             ("(> 4 3 2 1)",     "#t"),
-            ("(> 1 2 3 2 1)",   "#f")
+            ("(> 1 2 3 2 1)",   "#f"),
+
+            ("(<= 1 1)",         "#t"),
+            ("(<= 1 2)",         "#t"),
+            ("(<= 2 1)",         "#f"),
+            ("(<= 1 1 3 4)",     "#t"),
+            ("(<= 1 2 3 2 1)",   "#f"),
+
+            ("(>= 1 1)",         "#t"),
+            ("(>= 1 2)",         "#f"),
+            ("(>= 2 1)",         "#t"),
+            ("(>= 4 4 2 1)",     "#t"),
+            ("(>= 1 2 3 2 1)",   "#f")
         ];
 
         let interp = Interpreter::new();

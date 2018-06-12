@@ -21,6 +21,8 @@ impl Environment {
                 ("=",    eq_proc),
                 (">",    gt_proc),
                 ("<",    lt_proc),
+                (">=",   ge_proc),
+                ("<=",   le_proc),
                 ("car",  car_proc),
                 ("cdr",  cdr_proc),
                 ("cons", cons_proc),

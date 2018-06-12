@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::rc::Rc;
 
 use environment::Environment;
@@ -31,18 +32,25 @@ fn lambda_exp(args: &[Value], env: Rc<Environment>) -> Result<Value, String> {
         return Err("lambda requires more than 2 arguments".to_owned());
     }
 
-    let vars = match &args[0] {
-        &Value::List(ref vs) => vs.clone(),
-        _ => return Err("First argument of lambda must be a list".to_owned())
+    let (vars, variadic) = match &args[0] {
+        &Value::List(ref vs) => (vs.clone(), None),
+        &Value::DottedList(ref vs) =>
+            (vs[..vs.len() - 1].to_vec(), Some(Box::new(vs[vs.len() - 1].clone()))),
+        &Value::Symbol(ref s) =>
+            (Vec::new(), Some(Box::new(Value::Symbol(s.clone())))),
+        _ => return Err("First argument of lambda must be a list, \
+                         dotted list or symbol".to_owned())
     };
 
     let body = args[1..].to_vec();
 
-    Ok(Value::Procedure(Procedure::Scheme(vars, env.clone(), body)))
+    Ok(Value::Procedure(Procedure::Scheme(vars, variadic, env.clone(), body)))
 }
 
-fn eval_proc(vars: &[Value], body: &[Value], args: &[Value], env: Rc<Environment>) -> Result<Value, String> {
-    if vars.len() != args.len() {
+fn eval_proc(vars: &[Value], variadic: Option<Box<Value>>, body: &[Value],
+             args: &[Value], env: Rc<Environment>) -> Result<Value, String> {
+    if args.len() < vars.len() ||
+        (args.len() > vars.len() && variadic.is_none()) {
         return Err(format!("procedure requires {} arguments but {} supplied",
                            vars.len(), args.len()))
     }
@@ -50,11 +58,14 @@ fn eval_proc(vars: &[Value], body: &[Value], args: &[Value], env: Rc<Environment
     let new_env = Rc::new(Environment::new_child(env));
 
     for (var, arg) in vars.iter().zip(args.iter()) {
-        match var {
-            &Value::Symbol(ref s) => {
-                new_env.define(s, arg);
-            },
-            _ => {}
+        if let &Value::Symbol(ref s) = var {
+            new_env.define(s, arg);
+        }
+    }
+
+    if let Some(var) = variadic {
+        if let &Value::Symbol(ref s) = var.borrow() {
+            new_env.define(s, &Value::List(args[vars.len()..].to_vec()));
         }
     }
 
@@ -121,11 +132,12 @@ fn eval_list(vs: &[Value], env: Rc<Environment>) -> Result<Value, String> {
 
             return f(&args?[..]);
         },
-        &Value::Procedure(Procedure::Scheme(ref vars, ref closure, ref body)) => {
+        &Value::Procedure(Procedure::Scheme(ref vars, ref variadic, ref closure, ref body)) => {
             let args: Result<Vec<Value>, String>
                 = args.iter().map(|arg| eval(arg, env.clone())).collect();
 
-            return eval_proc(&vars[..], &body[..], &args?[..], closure.clone());
+            return eval_proc(&vars[..], variadic.clone(), &body[..],
+                             &args?[..], closure.clone());
         },
         v => Err(format!("Invalid application to {}", v))
     }
@@ -197,7 +209,9 @@ mod tests {
             ("((lambda (x) (+ x x)) 4)",            "8"),
             ("((lambda (x) (+ (* x x) x 1)) 2)",    "7"),
             ("((lambda () 123))",                   "123"),
-            ("((lambda (x) (+ x 1) (* x 2)) 10)",   "20")
+            ("((lambda (x) (+ x 1) (* x 2)) 10)",   "20"),
+            ("((lambda x x) 3 4 5 6)",              "(3 4 5 6)"),
+            ("((lambda (x y . z) z) 3 4 5 6)",      "(5 6)")
         ];
 
         let interp = Interpreter::new();

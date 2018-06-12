@@ -48,7 +48,9 @@ impl<T: Iterator<Item=Result<Token, String>>> Parser<T> {
                     self.tokens.next();
                     items.push(self.parse()?);
 
-                    return Ok(Value::DottedList(items));
+                    // TODO Check if CloseParen
+                    self.tokens.next();
+                    return Ok(Value::DottedList(items))
                 },
                 _ => {
                     items.push(self.parse()?);
@@ -206,6 +208,48 @@ mod tests {
             Value::DottedList(vec![
                 Value::Integer(123),
                 Value::Integer(456)
+            ]),
+            parser.parse().unwrap()
+        );
+    }
+
+    #[test]
+    fn test_dotted_list2() {
+        let tokens = vec![
+            Token::OpenParen,
+            Token::OpenParen,
+            Token::Identifier("lambda".to_owned()),
+            Token::OpenParen,
+            Token::Identifier("x".to_owned()),
+            Token::Identifier("y".to_owned()),
+            Token::Dot,
+            Token::Identifier("z".to_owned()),
+            Token::CloseParen,
+            Token::Identifier("z".to_owned()),
+            Token::CloseParen,
+            Token::Integer(3),
+            Token::Integer(4),
+            Token::Integer(5),
+            Token::Integer(6),
+            Token::CloseParen
+        ];
+        let mut parser = Parser::new(tokens.into_iter().map(Ok));
+
+        assert_eq!(
+            Value::List(vec![
+                Value::List(vec![
+                    Value::Symbol("lambda".to_owned()),
+                    Value::DottedList(vec![
+                        Value::Symbol("x".to_owned()),
+                        Value::Symbol("y".to_owned()),
+                        Value::Symbol("z".to_owned())
+                    ]),
+                    Value::Symbol("z".to_owned())
+                ]),
+                Value::Integer(3),
+                Value::Integer(4),
+                Value::Integer(5),
+                Value::Integer(6),
             ]),
             parser.parse().unwrap()
         );

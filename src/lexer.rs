@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn test_lex_identifier() {
-        let lexer = Lexer::new("foo bar-baz qux?");
+        let lexer = Lexer::new("foo bar-baz qux?".as_bytes());
         let expected = vec![
             Token::Identifier("foo".to_owned()),
             Token::Identifier("bar-baz".to_owned()),
@@ -254,7 +254,7 @@ mod tests {
 
     #[test]
     fn test_lex_boolean() {
-        let lexer = Lexer::new("#t #f");
+        let lexer = Lexer::new("#t #f".as_bytes());
         let expected = vec![
             Token::Boolean(true),
             Token::Boolean(false)
@@ -267,7 +267,7 @@ mod tests {
 
     #[test]
     fn test_lex_integer() {
-        let lexer = Lexer::new("123");
+        let lexer = Lexer::new("123".as_bytes());
         let expected = vec![Token::Integer(123)];
 
         for (actual, expected) in lexer.zip(expected) {
@@ -277,7 +277,7 @@ mod tests {
 
     #[test]
     fn test_lex_string() {
-        let lexer = Lexer::new("\"test\"");
+        let lexer = Lexer::new("\"test\"".as_bytes());
         let expected = vec![Token::String("test".to_owned())];
 
         for (actual, expected) in lexer.zip(expected) {
@@ -287,7 +287,7 @@ mod tests {
 
     #[test]
     fn test_lex_miscs() {
-        let lexer = Lexer::new("()'`,,@.");
+        let lexer = Lexer::new("()'`,,@.".as_bytes());
         let expected = vec![
             Token::OpenParen,
             Token::CloseParen,

@@ -279,110 +279,172 @@ pub fn number_to_string_proc(args: &[Value]) -> Result<Value, String> {
 
 #[cfg(test)]
 mod tests {
-    use util::rep;
+    use interpreter::Interpreter;
 
     #[test]
     fn test_basic_arithmetic() {
-        assert_eq!(rep("(+ 3 4)"), "7");
-        assert_eq!(rep("(+ 3)"), "3");
-        assert_eq!(rep("(+)"), "0");
+        let cases = vec![
+            ("(+ 3 4)",     "7"),
+            ("(+ 3)",       "3"),
+            ("(+)",         "0"),
+            ("(* 4)",       "4"),
+            ("(*)",         "1"),
+            ("(- 3 4)",     "-1"),
+            ("(- 3 4 5)",   "-6"),
+            ("(- 3)",       "-3")
+        ];
 
-        assert_eq!(rep("(* 4)"), "4");
-        assert_eq!(rep("(*)"), "1");
+        let interp = Interpreter::new();
 
-        assert_eq!(rep("(- 3 4)"), "-1");
-        assert_eq!(rep("(- 3 4 5)"), "-6");
-        assert_eq!(rep("(- 3)"), "-3");
+        for (input, expected) in cases {
+            assert_eq!(interp.rep_str(input), expected);
+        }
     }
 
     #[test]
     fn test_cons() {
-        assert_eq!(rep("(cons 'a '())"), "(a)");
-        assert_eq!(rep("(cons '(a) '(b c d))"), "((a) b c d)");
-        assert_eq!(rep("(cons \"a\" '(b c))"), "(\"a\" b c)");
-        assert_eq!(rep("(cons 'a 3)"), "(a . 3)");
-        assert_eq!(rep("(cons '(a b) 'c)"), "((a b) . c)");
+        let cases = vec![
+            ("(cons 'a '())",           "(a)"),
+            ("(cons '(a) '(b c d))",    "((a) b c d)"),
+            ("(cons \"a\" '(b c))",     "(\"a\" b c)"),
+            ("(cons 'a 3)",             "(a . 3)"),
+            ("(cons '(a b) 'c)",        "((a b) . c)")
+        ];
+
+        let interp = Interpreter::new();
+
+        for (input, expected) in cases {
+            assert_eq!(interp.rep_str(input), expected);
+        }
     }
 
     #[test]
     fn test_car() {
-        assert_eq!(rep("(car '(a b c))"), "a");
-        assert_eq!(rep("(car '((a) b c d))"), "(a)");
-        assert_eq!(rep("(car '(1 . 2))"), "1");
+        let cases = vec![
+            ("(car '(a b c))",      "a"),
+            ("(car '((a) b c d))",  "(a)"),
+            ("(car '(1 . 2))",      "1")
+        ];
+
+        let interp = Interpreter::new();
+
+        for (input, expected) in cases {
+            assert_eq!(interp.rep_str(input), expected);
+        }
     }
 
     #[test]
     fn test_cdr() {
-        assert_eq!(rep("(cdr '((a) b c d))"), "(b c d)");
-        assert_eq!(rep("(cdr '(1 . 2))"), "2");
+        let cases = vec![
+            ("(cdr '((a) b c d))",  "(b c d)"),
+            ("(cdr '(1 . 2))",      "2")
+        ];
+
+        let interp = Interpreter::new();
+
+        for (input, expected) in cases {
+            assert_eq!(interp.rep_str(input), expected);
+        }
     }
 
     #[test]
     fn test_numerical_predicates() {
-        assert_eq!(rep("(= 1 1)"), "#t");
-        assert_eq!(rep("(= 1 1 1)"), "#t");
-        assert_eq!(rep("(= 1 2 3 4)"), "#f");
+        let cases = vec![
+            ("(= 1 1)",     "#t"),
+            ("(= 1 1 1)",   "#t"),
+            ("(= 1 2 3 4)", "#f"),
 
-        assert_eq!(rep("(< 1 1)"), "#f");
-        assert_eq!(rep("(< 1 2)"), "#t");
-        assert_eq!(rep("(< 2 1)"), "#f");
-        assert_eq!(rep("(< 1 2 3 4)"), "#t");
-        assert_eq!(rep("(< 1 2 3 2 1)"), "#f");
+            ("(< 1 1)",         "#f"),
+            ("(< 1 2)",         "#t"),
+            ("(< 2 1)",         "#f"),
+            ("(< 1 2 3 4)",     "#t"),
+            ("(< 1 2 3 2 1)",   "#f"),
 
-        assert_eq!(rep("(> 1 1)"), "#f");
-        assert_eq!(rep("(> 1 2)"), "#f");
-        assert_eq!(rep("(> 2 1)"), "#t");
-        assert_eq!(rep("(> 4 3 2 1)"), "#t");
-        assert_eq!(rep("(> 1 2 3 2 1)"), "#f");
+            ("(> 1 1)",         "#f"),
+            ("(> 1 2)",         "#f"),
+            ("(> 2 1)",         "#t"),
+            ("(> 4 3 2 1)",     "#t"),
+            ("(> 1 2 3 2 1)",   "#f")
+        ];
+
+        let interp = Interpreter::new();
+
+        for (input, expected) in cases {
+            assert_eq!(interp.rep_str(input), expected);
+        }
     }
 
     #[test]
     fn test_eqv() {
-        assert_eq!(rep("(eqv? 'a 'a)"), "#t");
-        assert_eq!(rep("(eqv? 'a 'b)"), "#f");
-        assert_eq!(rep("(eqv? 2 2)"), "#t");
-        assert_eq!(rep("(eqv? '() '())"), "#t");
-        assert_eq!(rep("(eqv? 100000000 100000000)"), "#t");
-        assert_eq!(rep("(eqv? (cons 1 2) (cons 1 2))"), "#f");
-        assert_eq!(rep("(eqv? (lambda () 1) (lambda () 2))"), "#f");
-        assert_eq!(rep("(eqv? #f 'nil)"), "#f");
+        let cases = vec![
+            ("(eqv? 'a 'a)",                        "#t"),
+            ("(eqv? 'a 'b)",                        "#f"),
+            ("(eqv? 2 2)",                          "#t"),
+            ("(eqv? '() '())",                      "#t"),
+            ("(eqv? 100000000 100000000)",          "#t"),
+            ("(eqv? (cons 1 2) (cons 1 2))",        "#f"),
+            ("(eqv? (lambda () 1) (lambda () 2))",  "#f"),
+            ("(eqv? #f 'nil)",                      "#f")
+        ];
+
+        let interp = Interpreter::new();
+
+        for (input, expected) in cases {
+            assert_eq!(interp.rep_str(input), expected);
+        }
     }
 
     #[test]
     fn test_type_predicates() {
-        assert_eq!(rep("(boolean? #t)"), "#t");
-        assert_eq!(rep("(boolean? #f)"), "#t");
-        assert_eq!(rep("(boolean? 0)"), "#f");
-        assert_eq!(rep("(boolean? '())"), "#f");
+        let cases = vec![
+            ("(boolean? #t)",   "#t"),
+            ("(boolean? #f)",   "#t"),
+            ("(boolean? 0)",    "#f"),
+            ("(boolean? '())",  "#f"),
 
-        assert_eq!(rep("(pair? '(1 2 3))"), "#t");
-        assert_eq!(rep("(pair? '(1 2 . 3))"), "#t");
-        assert_eq!(rep("(pair? '(a . b))"), "#t");
-        assert_eq!(rep("(pair? '(a b c))"), "#t");
-        assert_eq!(rep("(pair? '())"), "#f");
+            ("(pair? '(1 2 3))",    "#t"),
+            ("(pair? '(1 2 . 3))",  "#t"),
+            ("(pair? '(a . b))",    "#t"),
+            ("(pair? '(a b c))",    "#t"),
+            ("(pair? '())",         "#f"),
 
-        assert_eq!(rep("(symbol? 'a)"), "#t");
-        assert_eq!(rep("(symbol? (car '(a b)))"), "#t");
-        assert_eq!(rep("(symbol? \"bar\")"), "#f");
-        assert_eq!(rep("(symbol? 'nil)"), "#t");
-        assert_eq!(rep("(symbol? '())"), "#f");
-        assert_eq!(rep("(symbol? #f)"), "#f");
+            ("(symbol? 'a)",            "#t"),
+            ("(symbol? (car '(a b)))",  "#t"),
+            ("(symbol? \"bar\")",       "#f"),
+            ("(symbol? 'nil)",          "#t"),
+            ("(symbol? '())",           "#f"),
+            ("(symbol? #f)",            "#f"),
 
-        assert_eq!(rep("(number? 123)"), "#t");
+            ("(number? 123)",   "#t"),
 
-        assert_eq!(rep("(string? \"test\")"), "#t");
+            ("(string? \"test\")",  "#t"),
 
-        assert_eq!(rep("(procedure? car)"), "#t");
-        assert_eq!(rep("(procedure? 'car)"), "#f");
-        assert_eq!(rep("(procedure? (lambda (x) (* x x)))"), "#t");
-        assert_eq!(rep("(procedure? '(lambda (x) (* x x)))"), "#f");
+            ("(procedure? car)",                    "#t"),
+            ("(procedure? 'car)",                   "#f"),
+            ("(procedure? (lambda (x) (* x x)))",   "#t"),
+            ("(procedure? '(lambda (x) (* x x)))",  "#f"),
+        ];
+
+        let interp = Interpreter::new();
+
+        for (input, expected) in cases {
+            assert_eq!(interp.rep_str(input), expected);
+        }
     }
 
     #[test]
     fn test_type_conversions() {
-        assert_eq!(rep("(number->string 123)"), "\"123\"");
+        let cases = vec![
+            ("(number->string 123)",    "\"123\""),
 
-        assert_eq!(rep("(string->number \"456\")"), "456");
-        assert_eq!(rep("(string->number \"abc\")"), "#f");
+            ("(string->number \"456\")",    "456"),
+            ("(string->number \"abc\")",    "#f"),
+        ];
+
+        let interp = Interpreter::new();
+
+        for (input, expected) in cases {
+            assert_eq!(interp.rep_str(input), expected);
+        }
     }
 }

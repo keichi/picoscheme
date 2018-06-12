@@ -155,7 +155,7 @@ pub fn eval(value: &Value, env: Rc<Environment>) -> Result<Value, String> {
 
 #[cfg(test)]
 mod tests {
-    use util::rep;
+    use interpreter::Interpreter;
 
     #[test]
     fn test_quote() {
@@ -169,8 +169,10 @@ mod tests {
             ("''a",             "(quote a)")
         ];
 
+        let interp = Interpreter::new();
+
         for (input, expected) in cases {
-            assert_eq!(rep(input), expected);
+            assert_eq!(interp.rep_str(input), expected);
         }
     }
 
@@ -182,8 +184,10 @@ mod tests {
             ("(if (> 3 2) (- 3 2) (+ 3 2))",    "1")
         ];
 
+        let interp = Interpreter::new();
+
         for (input, expected) in cases {
-            assert_eq!(rep(input), expected);
+            assert_eq!(interp.rep_str(input), expected);
         }
     }
 
@@ -196,8 +200,10 @@ mod tests {
             ("((lambda (x) (+ x 1) (* x 2)) 10)", "20")
         ];
 
+        let interp = Interpreter::new();
+
         for (input, expected) in cases {
-            assert_eq!(rep(input), expected);
+            assert_eq!(interp.rep_str(input), expected);
         }
     }
 
@@ -207,8 +213,10 @@ mod tests {
             ("(define a 1)", "a")
         ];
 
+        let interp = Interpreter::new();
+
         for (input, expected) in cases {
-            assert_eq!(rep(input), expected);
+            assert_eq!(interp.rep_str(input), expected);
         }
     }
 }

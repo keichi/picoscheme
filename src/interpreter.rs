@@ -40,9 +40,9 @@ impl Interpreter {
     pub fn rep_str(&self, s: &str) -> String {
         let lexer = Lexer::new(s.as_bytes());
         let mut parser = Parser::new(lexer);
-        let parsed = parser.parse().expect("Failed to parse");
-        let env = Environment::new_global();
-        let result = eval(&parsed, Rc::new(env)).expect("Failed to evaluate");
+        let parsed = parser.parse().unwrap();
+
+        let result = eval(&parsed, self.env.clone()).unwrap();
 
         format!("{}", result)
     }

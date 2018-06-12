@@ -210,7 +210,8 @@ mod tests {
     #[test]
     fn test_define() {
         let cases = vec![
-            ("(define a 1)", "a")
+            ("(define a 1)",    "a"),
+            ("a",               "1")
         ];
 
         let interp = Interpreter::new();

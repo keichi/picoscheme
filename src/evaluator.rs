@@ -194,10 +194,10 @@ mod tests {
     #[test]
     fn test_lambda() {
         let cases = vec![
-            ("((lambda (x) (+ x x)) 4)", "8"),
-            ("((lambda (x) (+ (* x x) x 1)) 2)", "7"),
-            ("((lambda () 123))", "123"),
-            ("((lambda (x) (+ x 1) (* x 2)) 10)", "20")
+            ("((lambda (x) (+ x x)) 4)",            "8"),
+            ("((lambda (x) (+ (* x x) x 1)) 2)",    "7"),
+            ("((lambda () 123))",                   "123"),
+            ("((lambda (x) (+ x 1) (* x 2)) 10)",   "20")
         ];
 
         let interp = Interpreter::new();

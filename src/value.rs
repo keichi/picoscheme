@@ -41,6 +41,17 @@ impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             &Value::List(ref vs) => {
+                if vs.len() > 1 {
+                    if let &Value::Symbol(ref s) = &vs[0] {
+                        match s.as_str() {
+                            "quote" => return write!(f, "'{}", vs[1]),
+                            "quasiquote" => return write!(f, "`{}", vs[1]),
+                            "unquote" => return write!(f, ",{}", vs[1]),
+                            _ => {}
+                        }
+                    }
+                }
+
                 write!(f, "(")?;
                 for (i, v) in vs.iter().enumerate() {
                     if i >= 1 {
@@ -48,8 +59,7 @@ impl fmt::Display for Value {
                     }
                     write!(f, "{}", v)?;
                 }
-                write!(f, ")")?;
-                return Ok(());
+                write!(f, ")")
             },
             &Value::DottedList(ref vs) => {
                 write!(f, "(")?;
@@ -61,8 +71,7 @@ impl fmt::Display for Value {
                     }
                     write!(f, "{}", v)?;
                 }
-                write!(f, ")")?;
-                return Ok(());
+                write!(f, ")")
             },
             &Value::Boolean(true) => write!(f, "#t"),
             &Value::Boolean(false) => write!(f, "#f"),

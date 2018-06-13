@@ -12,6 +12,57 @@ fn quote_exp(args: &[Value], _: Rc<Environment>) -> Result<Value, String> {
     Ok(args[0].clone())
 }
 
+fn expand_qq(value: &Value, env: Rc<Environment>, lv: i32) -> Result<Value, String> {
+    if let &Value::List(ref vs) = value {
+        if vs.is_empty() {
+            return Ok(Value::List(Vec::new()))
+        }
+
+        if let &Value::Symbol(ref s) = &vs[0] {
+            match s.as_str() {
+                "quasiquote" => {
+                    if vs.len() != 2 {
+                        return Err("Malformed quasiquote".to_owned());
+                    }
+
+                    return expand_qq(&vs[1], env, lv + 1).map(|v| Value::List(vec![
+                        Value::Symbol("quasiquote".to_owned()), v
+                    ]))
+                },
+                "unquote" => {
+                    if vs.len() != 2 {
+                        return Err("Malformed unquote".to_owned());
+                    }
+
+                    if lv <= 0 {
+                        return eval(&vs[1], env)
+                    } else {
+                        return expand_qq(&vs[1], env, lv - 1).map(|v| Value::List(vec![
+                            Value::Symbol("unquote".to_owned()), v
+                        ]))
+                    }
+                },
+                _ => {}
+            }
+        }
+
+        return vs.iter().map(|v| expand_qq(v, env.clone(), lv))
+                        .collect::<Result<Vec<Value>, String>>()
+                        .map(Value::List);
+    }
+
+    Ok(value.clone())
+}
+
+fn quasiquote_exp(args: &[Value], env: Rc<Environment>) -> Result<Value, String> {
+    if args.len() != 1 {
+        return Err("quasiquote requires 1 argument".to_owned())
+    }
+
+    expand_qq(&args[0], env, 0)
+}
+
+
 fn if_exp(args: &[Value], env: Rc<Environment>) -> Result<Value, String> {
     if args.len() != 2 && args.len() != 3 {
         return Err("quote requires 2 or 3 arguments".to_owned())
@@ -120,10 +171,15 @@ fn eval_list(vs: &[Value], env: Rc<Environment>) -> Result<Value, String> {
     match f {
         &Value::Symbol(ref s) => match s.as_str() {
             "quote" => quote_exp(args, env),
+            "quasiquote" => quasiquote_exp(args, env),
             "if" => if_exp(args, env),
             "lambda" => lambda_exp(args, env),
             "define" => define_exp(args, env),
             "set!" => set_exp(args, env),
+            "unquote" =>
+                Err("unquote is not allowed here".to_owned()),
+            "unquote-splicing" =>
+                Err("unquote-splicing is not allowed here".to_owned()),
             _ => Err(format!("Invalid application to symbol {}", s))
         },
         &Value::Procedure(Procedure::Builtin(f)) => {
@@ -132,7 +188,8 @@ fn eval_list(vs: &[Value], env: Rc<Environment>) -> Result<Value, String> {
 
             return f(&args?[..]);
         },
-        &Value::Procedure(Procedure::Scheme(ref vars, ref variadic, ref closure, ref body)) => {
+        &Value::Procedure(Procedure::Scheme(ref vars, ref variadic,
+                                            ref closure, ref body)) => {
             let args: Result<Vec<Value>, String>
                 = args.iter().map(|arg| eval(arg, env.clone())).collect();
 
@@ -151,6 +208,9 @@ pub fn eval(value: &Value, env: Rc<Environment>) -> Result<Value, String> {
         &Value::Boolean(b) => Ok(Value::Boolean(b.clone())),
         &Value::Symbol(ref s) => match s.as_str() {
             "quote" => Ok(value.clone()),
+            "quasiquote" => Ok(value.clone()),
+            "unquote" => Ok(value.clone()),
+            "unquote-splicing" => Ok(value.clone()),
             "if" => Ok(value.clone()),
             "lambda" => Ok(value.clone()),
             "define" => Ok(value.clone()),
@@ -177,8 +237,25 @@ mod tests {
             ("'a",              "a"),
             ("'()",             "()"),
             ("'(+ 1 2)",        "(+ 1 2)"),
-            ("'(quote a)",      "(quote a)"),
-            ("''a",             "(quote a)")
+            ("'(quote a)",      "'a"),
+            ("''a",             "'a")
+        ];
+
+        let interp = Interpreter::new();
+
+        for (input, expected) in cases {
+            assert_eq!(interp.rep_str(input), expected);
+        }
+    }
+
+    #[test]
+    fn test_quasiquote() {
+        let cases = vec![
+            ("`(list ,(+ 1 2) 4)",  "(list 3 4)"),
+            ("``,,'(1 2)",          "`,(1 2)"),
+            ("`',123",              "'123"),
+            ("`(a `(b ,(+ 1 2) ,(foo ,(+ 1 3) d) e) f)",
+             "(a `(b ,(+ 1 2) ,(foo 4 d) e) f)")
         ];
 
         let interp = Interpreter::new();

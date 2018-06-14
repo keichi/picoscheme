@@ -42,13 +42,46 @@ fn expand_qq(value: &Value, env: Rc<Environment>, lv: i32) -> Result<Value, Stri
                         ]))
                     }
                 },
+                "unquote-splicing" => {
+                    if vs.len() != 2 {
+                        return Err("Malformed unquote-splicing".to_owned());
+                    }
+
+                    if lv <= 0 {
+                        return eval(&vs[1], env)
+                    } else {
+                        return expand_qq(&vs[1], env, lv - 1).map(|v| Value::List(vec![
+                            Value::Symbol("unquote-splicing".to_owned()), v
+                        ]))
+                    }
+                },
                 _ => {}
             }
         }
 
-        return vs.iter().map(|v| expand_qq(v, env.clone(), lv))
-                        .collect::<Result<Vec<Value>, String>>()
-                        .map(Value::List);
+        return vs.clone().iter()
+            .flat_map(|v| {
+                if let &Value::List(ref vs) = v {
+                    if vs.is_empty() {
+                        if let &Value::Symbol(ref s) = &vs[0] {
+                            if s == "unquote-splicing" {
+                                let tmp: Result<Value, String> = expand_qq(v, env.clone(), lv);
+                                return tmp.and_then(|t| {
+                                    if let Value::List(ref vs) = t {
+                                        vs.clone().into_iter().map(Ok)
+                                    } else {
+                                        vec![Err("?????".to_owned())].into_iter().map(|i| i)
+                                    }
+                                }).map_err(|e| vec![e].into_iter())
+                            }
+                        }
+                    }
+                }
+
+                return vec![expand_qq(v, env.clone(), lv)].into_iter();
+            })
+            .collect::<Result<Vec<Value>, String>>()
+            .map(Value::List);
     }
 
     Ok(value.clone())

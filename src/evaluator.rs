@@ -13,30 +13,34 @@ fn quote_exp(args: &[Value], _: Rc<Environment>) -> Result<Value, String> {
 }
 
 fn expand_qq_list(args: &[Value], env: Rc<Environment>, lv: i32) -> Result<Value, String> {
-    args.iter()
-        .flat_map(|v| {
-            let expanded = expand_qq(v, env.clone(), lv);
+    let mut res = Vec::new();
 
-            if let Value::List(ref vs) = v {
-                if !vs.is_empty() {
-                    if let Value::Symbol(ref s) = vs[0] {
-                        if s == "unquote-splicing" && lv == 0 {
-                            match expanded {
-                                Ok(Value::List(ref vs)) =>
-                                    return vs.clone().into_iter().map(Ok).collect(),
-                                Ok(_) =>
-                                    return vec![Err("unquote-splicing requires a list".to_owned())],
-                                e => return vec![e]
+    for v in args {
+        let expanded = expand_qq(v, env.clone(), lv);
+
+        if let Value::List(ref vs) = v {
+            if !vs.is_empty() {
+                if let Value::Symbol(ref s) = vs[0] {
+                    if s == "unquote-splicing" && lv == 0 {
+                        match expanded {
+                            Ok(Value::List(ref vs)) => {
+                                res.append(&mut vs.clone());
+                                continue;
                             }
+                            Ok(_) =>
+                                return Err("unquote-splicing requires a list".to_owned()),
+                            e =>
+                                return e
                         }
                     }
                 }
             }
+        }
 
-            return vec![expanded]
-        })
-        .collect::<Result<Vec<_>, _>>()
-        .map(Value::List)
+        res.push(expanded?)
+    }
+
+    Ok(Value::List(res))
 }
 
 fn expand_qq(value: &Value, env: Rc<Environment>, lv: i32) -> Result<Value, String> {
@@ -290,7 +294,9 @@ mod tests {
             ("`(1 `,(+ 1 ,(+ 2 3)) 4)`)`",
              "(1 `,(+ 1 5) 4)"),
             ("`(a `(b ,(+ 1 2) ,(foo ,(+ 1 3) d) e) f)",
-             "(a `(b ,(+ 1 2) ,(foo 4 d) e) f)")
+             "(a `(b ,(+ 1 2) ,(foo 4 d) e) f)"),
+            ("`(1 2 ,@(cons 'a '(b c)) 3)",
+             "(1 2 a b c 3)")
         ];
 
         let interp = Interpreter::new();

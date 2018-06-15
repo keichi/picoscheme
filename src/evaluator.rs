@@ -12,6 +12,33 @@ fn quote_exp(args: &[Value], _: Rc<Environment>) -> Result<Value, String> {
     Ok(args[0].clone())
 }
 
+fn expand_qq_list(args: &[Value], env: Rc<Environment>, lv: i32) -> Result<Value, String> {
+    args.iter()
+        .flat_map(|v| {
+            let expanded = expand_qq(v, env.clone(), lv);
+
+            if let Value::List(ref vs) = v {
+                if !vs.is_empty() {
+                    if let Value::Symbol(ref s) = vs[0] {
+                        if s == "unquote-splicing" && lv == 0 {
+                            match expanded {
+                                Ok(Value::List(ref vs)) =>
+                                    return vs.clone().into_iter().map(Ok).collect(),
+                                Ok(_) =>
+                                    return vec![Err("unquote-splicing requires a list".to_owned())],
+                                e => return vec![e]
+                            }
+                        }
+                    }
+                }
+            }
+
+            return vec![expanded]
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map(Value::List)
+}
+
 fn expand_qq(value: &Value, env: Rc<Environment>, lv: i32) -> Result<Value, String> {
     if let &Value::List(ref vs) = value {
         if vs.is_empty() {
@@ -25,9 +52,7 @@ fn expand_qq(value: &Value, env: Rc<Environment>, lv: i32) -> Result<Value, Stri
                         return Err("Malformed quasiquote".to_owned());
                     }
 
-                    return expand_qq(&vs[1], env, lv + 1).map(|v| Value::List(vec![
-                        Value::Symbol("quasiquote".to_owned()), v
-                    ]))
+                    return expand_qq_list(vs, env, lv + 1);
                 },
                 "unquote" => {
                     if vs.len() != 2 {
@@ -37,9 +62,7 @@ fn expand_qq(value: &Value, env: Rc<Environment>, lv: i32) -> Result<Value, Stri
                     if lv <= 0 {
                         return eval(&vs[1], env)
                     } else {
-                        return expand_qq(&vs[1], env, lv - 1).map(|v| Value::List(vec![
-                            Value::Symbol("unquote".to_owned()), v
-                        ]))
+                        return expand_qq_list(vs, env, lv - 1);
                     }
                 },
                 "unquote-splicing" => {
@@ -50,38 +73,14 @@ fn expand_qq(value: &Value, env: Rc<Environment>, lv: i32) -> Result<Value, Stri
                     if lv <= 0 {
                         return eval(&vs[1], env)
                     } else {
-                        return expand_qq(&vs[1], env, lv - 1).map(|v| Value::List(vec![
-                            Value::Symbol("unquote-splicing".to_owned()), v
-                        ]))
+                        return expand_qq_list(vs, env, lv - 1);
                     }
                 },
                 _ => {}
             }
         }
 
-        return vs.clone().iter()
-            .flat_map(|v| {
-                if let &Value::List(ref vs) = v {
-                    if vs.is_empty() {
-                        if let &Value::Symbol(ref s) = &vs[0] {
-                            if s == "unquote-splicing" {
-                                let tmp: Result<Value, String> = expand_qq(v, env.clone(), lv);
-                                return tmp.and_then(|t| {
-                                    if let Value::List(ref vs) = t {
-                                        vs.clone().into_iter().map(Ok)
-                                    } else {
-                                        vec![Err("?????".to_owned())].into_iter().map(|i| i)
-                                    }
-                                }).map_err(|e| vec![e].into_iter())
-                            }
-                        }
-                    }
-                }
-
-                return vec![expand_qq(v, env.clone(), lv)].into_iter();
-            })
-            .collect::<Result<Vec<Value>, String>>()
-            .map(Value::List);
+        return expand_qq_list(vs, env, lv);
     }
 
     Ok(value.clone())
@@ -287,6 +286,9 @@ mod tests {
             ("`(list ,(+ 1 2) 4)",  "(list 3 4)"),
             ("``,,'(1 2)",          "`,(1 2)"),
             ("`',123",              "'123"),
+            ("`(1 ,(+ 1 2) 4)`",    "(1 3 4)"),
+            ("`(1 `,(+ 1 ,(+ 2 3)) 4)`)`",
+             "(1 `,(+ 1 5) 4)"),
             ("`(a `(b ,(+ 1 2) ,(foo ,(+ 1 3) d) e) f)",
              "(a `(b ,(+ 1 2) ,(foo 4 d) e) f)")
         ];

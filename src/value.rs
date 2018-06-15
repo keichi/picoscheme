@@ -47,6 +47,7 @@ impl fmt::Display for Value {
                             "quote" => return write!(f, "'{}", vs[1]),
                             "quasiquote" => return write!(f, "`{}", vs[1]),
                             "unquote" => return write!(f, ",{}", vs[1]),
+                            "unquote-splicing" => return write!(f, ",@{}", vs[1]),
                             _ => {}
                         }
                     }

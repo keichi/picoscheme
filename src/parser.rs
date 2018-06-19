@@ -16,7 +16,7 @@ use lexer::Token;
 //          | ,@ <datum>
 
 pub struct Parser<T: Iterator<Item=Result<Token, String>>> {
-    tokens: Peekable<T>
+    pub tokens: Peekable<T>
 }
 
 impl<T: Iterator<Item=Result<Token, String>>> Parser<T> {

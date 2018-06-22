@@ -1,6 +1,6 @@
-use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use builtin::*;
 use value::{BuiltinFunc, Procedure, Value};
@@ -8,50 +8,49 @@ use value::{BuiltinFunc, Procedure, Value};
 #[derive(Clone, Debug)]
 pub struct Environment {
     parent: Option<Rc<Environment>>,
-    kvs: RefCell<HashMap<String, Value>>
+    kvs: RefCell<HashMap<String, Value>>,
 }
 
 impl Environment {
     pub fn new_global() -> Self {
-        let builtins: Vec<(&str, BuiltinFunc)> =
-            vec![
-                ("+",    add_proc),
-                ("-",    sub_proc),
-                ("*",    mul_proc),
-                ("=",    eq_proc),
-                (">",    gt_proc),
-                ("<",    lt_proc),
-                (">=",   ge_proc),
-                ("<=",   le_proc),
-                ("car",  car_proc),
-                ("cdr",  cdr_proc),
-                ("cons", cons_proc),
-                ("eqv?", is_eqv_proc),
-                ("boolean?", is_boolean_proc),
-                ("pair?", is_pair_proc),
-                ("symbol?", is_symbol_proc),
-                ("number?", is_number_proc),
-                ("string?", is_string_proc),
-                ("procedure?", is_procedure_proc),
-                ("string->number", string_to_number_proc),
-                ("number->string", number_to_string_proc)
-            ];
+        let builtins: Vec<(&str, BuiltinFunc)> = vec![
+            ("+", add_proc),
+            ("-", sub_proc),
+            ("*", mul_proc),
+            ("=", eq_proc),
+            (">", gt_proc),
+            ("<", lt_proc),
+            (">=", ge_proc),
+            ("<=", le_proc),
+            ("car", car_proc),
+            ("cdr", cdr_proc),
+            ("cons", cons_proc),
+            ("eqv?", is_eqv_proc),
+            ("boolean?", is_boolean_proc),
+            ("pair?", is_pair_proc),
+            ("symbol?", is_symbol_proc),
+            ("number?", is_number_proc),
+            ("string?", is_string_proc),
+            ("procedure?", is_procedure_proc),
+            ("string->number", string_to_number_proc),
+            ("number->string", number_to_string_proc),
+        ];
 
-        let kvs = builtins.into_iter()
-            .map(|(s, f)|
-                 (s.to_owned(), Value::Procedure(Procedure::Builtin(f))))
+        let kvs = builtins
+            .into_iter()
+            .map(|(s, f)| (s.to_owned(), Value::Procedure(Procedure::Builtin(f))))
             .collect();
 
         Environment {
             parent: None,
-            kvs: RefCell::new(kvs)
+            kvs: RefCell::new(kvs),
         }
     }
 
     pub fn new_child(parent: Rc<Environment>) -> Self {
         Environment {
             parent: Some(parent.clone()),
-            kvs: RefCell::new(HashMap::new())
+            kvs: RefCell::new(HashMap::new()),
         }
     }
 
@@ -78,7 +77,7 @@ impl Environment {
 
         match self.parent {
             Some(ref p) => p.get(key),
-            None => None
+            None => None,
         }
     }
 
@@ -89,8 +88,7 @@ impl Environment {
 
         match self.parent {
             Some(ref p) => p.has(key),
-            None => false
+            None => false,
         }
     }
 }
-

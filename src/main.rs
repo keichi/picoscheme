@@ -1,10 +1,10 @@
-mod value;
 mod builtin;
+mod environment;
+mod evaluator;
+mod interpreter;
 mod lexer;
 mod parser;
-mod evaluator;
-mod environment;
-mod interpreter;
+mod value;
 
 use interpreter::Interpreter;
 

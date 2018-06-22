@@ -14,12 +14,12 @@ pub enum Token {
     BackQuote,
     Comma,
     CommaAt,
-    Dot
+    Dot,
 }
 
 struct ReadChar<T: BufRead> {
     reader: T,
-    chars: vec::IntoIter<char>
+    chars: vec::IntoIter<char>,
 }
 
 impl<T: BufRead> Iterator for ReadChar<T> {
@@ -27,7 +27,7 @@ impl<T: BufRead> Iterator for ReadChar<T> {
 
     fn next(&mut self) -> Option<Result<char, String>> {
         if let Some(c) = self.chars.next() {
-            return Some(Ok(c))
+            return Some(Ok(c));
         }
 
         let mut line = String::new();
@@ -35,11 +35,10 @@ impl<T: BufRead> Iterator for ReadChar<T> {
         match self.reader.read_line(&mut line) {
             Ok(0) => None,
             Ok(_) => {
-                self.chars = line.chars().collect::<Vec<char>>()
-                                         .into_iter();
+                self.chars = line.chars().collect::<Vec<char>>().into_iter();
                 self.chars.next().map(|c| Ok(c))
-            },
-            Err(e) => Some(Err(e.to_string()))
+            }
+            Err(e) => Some(Err(e.to_string())),
         }
     }
 }
@@ -48,14 +47,13 @@ impl<T: BufRead> ReadChar<T> {
     fn new(r: T) -> Self {
         ReadChar {
             reader: r,
-            chars: Vec::new().into_iter()
+            chars: Vec::new().into_iter(),
         }
     }
 }
 
-
 pub struct Lexer<T: BufRead> {
-    iter: Peekable<ReadChar<T>>
+    iter: Peekable<ReadChar<T>>,
 }
 
 impl<T: BufRead> Iterator for Lexer<T> {
@@ -67,46 +65,47 @@ impl<T: BufRead> Iterator for Lexer<T> {
             _ => {}
         }
 
-        self.peek_char().map(|r| r.and_then(|c| match c {
-            '(' => {
-                self.advance_char();
-                Ok(Token::OpenParen)
-            },
-            ')' => {
-                self.advance_char();
-                Ok(Token::CloseParen)
-            },
-            '\'' => {
-                self.advance_char();
-                Ok(Token::Quote)
-            },
-            '`' => {
-                self.advance_char();
-                Ok(Token::BackQuote)
-            },
-            ',' => {
-                self.advance_char();
-
-                match self.peek_char() {
-                    Some(Ok('@')) => {
-                        self.advance_char();
-                        Ok(Token::CommaAt)
-                    },
-                    _ => Ok(Token::Comma)
+        self.peek_char().map(|r| {
+            r.and_then(|c| match c {
+                '(' => {
+                    self.advance_char();
+                    Ok(Token::OpenParen)
                 }
-            },
-            '.' => {
-                self.advance_char();
-                Ok(Token::Dot)
-            },
-            '"' => self.lex_string(),
-            '#' => self.lex_boolean(),
-            c if c.is_ascii_digit() => self.lex_integer(),
-            c if self.is_initial(c) => self.lex_identifier(),
-            c if self.is_peculiar_identifier(c) =>
-                self.lex_peculiar_identifier(),
-            c => Err(format!("Unexpected character {}", c))
-        }))
+                ')' => {
+                    self.advance_char();
+                    Ok(Token::CloseParen)
+                }
+                '\'' => {
+                    self.advance_char();
+                    Ok(Token::Quote)
+                }
+                '`' => {
+                    self.advance_char();
+                    Ok(Token::BackQuote)
+                }
+                ',' => {
+                    self.advance_char();
+
+                    match self.peek_char() {
+                        Some(Ok('@')) => {
+                            self.advance_char();
+                            Ok(Token::CommaAt)
+                        }
+                        _ => Ok(Token::Comma),
+                    }
+                }
+                '.' => {
+                    self.advance_char();
+                    Ok(Token::Dot)
+                }
+                '"' => self.lex_string(),
+                '#' => self.lex_boolean(),
+                c if c.is_ascii_digit() => self.lex_integer(),
+                c if self.is_initial(c) => self.lex_identifier(),
+                c if self.is_peculiar_identifier(c) => self.lex_peculiar_identifier(),
+                c => Err(format!("Unexpected character {}", c)),
+            })
+        })
     }
 }
 
@@ -115,7 +114,7 @@ impl<T: BufRead> Lexer<T> {
         let reader = ReadChar::new(r);
 
         Lexer {
-            iter: reader.peekable()
+            iter: reader.peekable(),
         }
     }
 
@@ -152,9 +151,9 @@ impl<T: BufRead> Lexer<T> {
             match self.peek_char() {
                 Some(Ok(c)) if c.is_ascii_whitespace() => {
                     self.advance_char();
-                },
+                }
                 Some(Err(e)) => return Err(e),
-                _ => return Ok(())
+                _ => return Ok(()),
             }
         }
     }
@@ -168,14 +167,14 @@ impl<T: BufRead> Lexer<T> {
             match self.peek_char() {
                 Some(Ok('"')) => {
                     self.advance_char();
-                    return Ok(Token::String(s))
-                },
+                    return Ok(Token::String(s));
+                }
                 Some(Ok(c)) => {
                     self.advance_char();
                     s.push(c)
-                },
+                }
                 Some(Err(e)) => return Err(e),
-                None => return Err("Unclosed string literal".to_owned())
+                None => return Err("Unclosed string literal".to_owned()),
             }
         }
     }
@@ -188,7 +187,7 @@ impl<T: BufRead> Lexer<T> {
             .and_then(|c| match c {
                 't' => Ok(Token::Boolean(true)),
                 'f' => Ok(Token::Boolean(false)),
-                c => Err(format!("Unexpected character {}", c))
+                c => Err(format!("Unexpected character {}", c)),
             })
     }
 
@@ -200,10 +199,13 @@ impl<T: BufRead> Lexer<T> {
                 Some(Ok(c)) if c.is_ascii_digit() => {
                     s.push(c);
                     self.advance_char();
-                },
+                }
                 Some(Err(e)) => return Err(e),
-                _ => return s.parse().map(|i| Token::Integer(i))
-                                     .map_err(|e| e.to_string())
+                _ => {
+                    return s.parse()
+                        .map(|i| Token::Integer(i))
+                        .map_err(|e| e.to_string())
+                }
             }
         }
     }
@@ -220,9 +222,9 @@ impl<T: BufRead> Lexer<T> {
                 Some(Ok(c)) if self.is_subsequent(c) => {
                     s.push(c);
                     self.advance_char();
-                },
+                }
                 Some(Err(e)) => return Err(e),
-                _ => return Ok(Token::Identifier(s))
+                _ => return Ok(Token::Identifier(s)),
             }
         }
     }
@@ -244,7 +246,7 @@ mod tests {
         let expected = vec![
             Token::Identifier("foo".to_owned()),
             Token::Identifier("bar-baz".to_owned()),
-            Token::Identifier("qux?".to_owned())
+            Token::Identifier("qux?".to_owned()),
         ];
 
         for (actual, expected) in lexer.zip(expected) {
@@ -255,10 +257,7 @@ mod tests {
     #[test]
     fn test_lex_boolean() {
         let lexer = Lexer::new("#t #f".as_bytes());
-        let expected = vec![
-            Token::Boolean(true),
-            Token::Boolean(false)
-        ];
+        let expected = vec![Token::Boolean(true), Token::Boolean(false)];
 
         for (actual, expected) in lexer.zip(expected) {
             assert_eq!(actual.unwrap(), expected);
@@ -295,7 +294,7 @@ mod tests {
             Token::BackQuote,
             Token::Comma,
             Token::CommaAt,
-            Token::Dot
+            Token::Dot,
         ];
 
         for (actual, expected) in lexer.zip(expected) {

@@ -1,21 +1,21 @@
-use std::io::{self, BufReader, Write};
 use std::fs::File;
+use std::io::{self, BufReader, Write};
 use std::path::Path;
 use std::rc::Rc;
 
+use environment::Environment;
+use evaluator::eval;
 use lexer::Lexer;
 use parser::Parser;
-use evaluator::eval;
-use environment::Environment;
 
 pub struct Interpreter {
-    env: Rc<Environment>
+    env: Rc<Environment>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
         Interpreter {
-            env: Rc::new(Environment::new_global())
+            env: Rc::new(Environment::new_global()),
         }
     }
 
@@ -29,11 +29,11 @@ impl Interpreter {
             let parsed = parser.parse();
 
             if let Err(e) = parsed.and_then(|e| eval(&e, self.env.clone())) {
-                return Err(e)
+                return Err(e);
             }
         }
 
-        return Ok(())
+        return Ok(());
     }
 
     pub fn start_repl(&self) {
@@ -52,8 +52,8 @@ impl Interpreter {
             let parsed = parser.parse();
 
             match parsed.and_then(|e| eval(&e, self.env.clone())) {
-                Ok(v) =>  println!("=> {}", v),
-                Err(e) => println!("Error: {}", e)
+                Ok(v) => println!("=> {}", v),
+                Err(e) => println!("Error: {}", e),
             }
         }
     }

@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use environment::Environment;
 
-pub type BuiltinFunc = fn (args: &[Value]) -> Result<Value, String>;
+pub type BuiltinFunc = fn(args: &[Value]) -> Result<Value, String>;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
@@ -19,14 +19,14 @@ pub enum Value {
 #[derive(Clone)]
 pub enum Procedure {
     Builtin(BuiltinFunc),
-    Scheme(Vec<Value>, Option<Box<Value>>, Rc<Environment>, Vec<Value>)
+    Scheme(Vec<Value>, Option<Box<Value>>, Rc<Environment>, Vec<Value>),
 }
 
 impl fmt::Debug for Procedure {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             &Procedure::Builtin(_) => write!(f, "Builtin"),
-            &Procedure::Scheme(_, _, _, _) => write!(f, "Scheme")
+            &Procedure::Scheme(_, _, _, _) => write!(f, "Scheme"),
         }
     }
 }
@@ -61,7 +61,7 @@ impl fmt::Display for Value {
                     write!(f, "{}", v)?;
                 }
                 write!(f, ")")
-            },
+            }
             &Value::DottedList(ref vs) => {
                 write!(f, "(")?;
                 for (i, v) in vs.iter().enumerate() {
@@ -73,14 +73,13 @@ impl fmt::Display for Value {
                     write!(f, "{}", v)?;
                 }
                 write!(f, ")")
-            },
+            }
             &Value::Boolean(true) => write!(f, "#t"),
             &Value::Boolean(false) => write!(f, "#f"),
             &Value::Symbol(ref s) => write!(f, "{}", s),
             &Value::Integer(i) => write!(f, "{}", i),
             &Value::String(ref s) => write!(f, "\"{}\"", s),
-            &Value::Procedure(_) => write!(f, "#<procedure>")
+            &Value::Procedure(_) => write!(f, "#<procedure>"),
         }
     }
 }
-

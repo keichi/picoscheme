@@ -1,8 +1,8 @@
 use std::iter::{Iterator, Peekable};
 use std::vec::Vec;
 
-use value::Value;
 use lexer::Token;
+use value::Value;
 
 // <datum> -> <boolean>
 //          | <number>
@@ -15,14 +15,14 @@ use lexer::Token;
 //          | , <datum>
 //          | ,@ <datum>
 
-pub struct Parser<T: Iterator<Item=Result<Token, String>>> {
-    pub tokens: Peekable<T>
+pub struct Parser<T: Iterator<Item = Result<Token, String>>> {
+    pub tokens: Peekable<T>,
 }
 
-impl<T: Iterator<Item=Result<Token, String>>> Parser<T> {
+impl<T: Iterator<Item = Result<Token, String>>> Parser<T> {
     pub fn new(lexer: T) -> Self {
         Parser {
-            tokens: lexer.peekable()
+            tokens: lexer.peekable(),
         }
     }
 
@@ -32,17 +32,19 @@ impl<T: Iterator<Item=Result<Token, String>>> Parser<T> {
         let mut items = Vec::new();
 
         loop {
-            let token = self.tokens.peek().cloned()
+            let token = self.tokens
+                .peek()
+                .cloned()
                 .unwrap_or(Err("Unclosed list".to_owned()))?;
 
             match token {
                 Token::CloseParen => {
                     self.tokens.next();
                     return Ok(Value::List(items));
-                },
+                }
                 Token::Dot => {
                     if items.is_empty() {
-                        return Err("Unexpected dot".to_owned())
+                        return Err("Unexpected dot".to_owned());
                     }
 
                     self.tokens.next();
@@ -50,8 +52,8 @@ impl<T: Iterator<Item=Result<Token, String>>> Parser<T> {
 
                     // TODO Check if CloseParen
                     self.tokens.next();
-                    return Ok(Value::DottedList(items))
-                },
+                    return Ok(Value::DottedList(items));
+                }
                 _ => {
                     items.push(self.parse()?);
                 }
@@ -60,60 +62,50 @@ impl<T: Iterator<Item=Result<Token, String>>> Parser<T> {
     }
 
     pub fn parse(&mut self) -> Result<Value, String> {
-        let token = self.tokens.peek().cloned()
+        let token = self.tokens
+            .peek()
+            .cloned()
             .unwrap_or(Err("Unexpected end of input".to_owned()));
 
         token.and_then(|tok| match tok {
             Token::Boolean(b) => {
                 self.tokens.next();
                 Ok(Value::Boolean(b))
-            },
+            }
             Token::Integer(i) => {
                 self.tokens.next();
                 Ok(Value::Integer(i))
-            },
+            }
             Token::String(s) => {
                 self.tokens.next();
                 Ok(Value::String(s))
-            },
+            }
             Token::Identifier(s) => {
                 self.tokens.next();
                 Ok(Value::Symbol(s))
-            },
+            }
             Token::OpenParen => self.parse_list(),
             Token::Quote => {
                 self.tokens.next();
-                self.parse().map(|v|
-                    Value::List(
-                        vec![Value::Symbol("quote".to_owned()), v]
-                    )
-                )
-            },
+                self.parse()
+                    .map(|v| Value::List(vec![Value::Symbol("quote".to_owned()), v]))
+            }
             Token::BackQuote => {
                 self.tokens.next();
-                self.parse().map(|v|
-                    Value::List(
-                        vec![Value::Symbol("quasiquote".to_owned()), v]
-                    )
-                )
-            },
+                self.parse()
+                    .map(|v| Value::List(vec![Value::Symbol("quasiquote".to_owned()), v]))
+            }
             Token::Comma => {
                 self.tokens.next();
-                self.parse().map(|v|
-                    Value::List(
-                        vec![Value::Symbol("unquote".to_owned()), v]
-                    )
-                )
-            },
+                self.parse()
+                    .map(|v| Value::List(vec![Value::Symbol("unquote".to_owned()), v]))
+            }
             Token::CommaAt => {
                 self.tokens.next();
-                self.parse().map(|v|
-                    Value::List(
-                        vec![Value::Symbol("unquote-splicing".to_owned()), v]
-                    )
-                )
+                self.parse()
+                    .map(|v| Value::List(vec![Value::Symbol("unquote-splicing".to_owned()), v]))
             }
-            _ => Err(format!("Unexepcted token {:?}", tok))
+            _ => Err(format!("Unexepcted token {:?}", tok)),
         })
     }
 }
@@ -152,7 +144,7 @@ mod tests {
             Token::String("a".to_owned()),
             Token::Integer(123),
             Token::Identifier("b".to_owned()),
-            Token::CloseParen
+            Token::CloseParen,
         ];
         let mut parser = Parser::new(tokens.into_iter().map(Ok));
 
@@ -160,7 +152,7 @@ mod tests {
             Value::List(vec![
                 Value::String("a".to_owned()),
                 Value::Integer(123),
-                Value::Symbol("b".to_owned())
+                Value::Symbol("b".to_owned()),
             ]),
             parser.parse().unwrap()
         );
@@ -176,7 +168,7 @@ mod tests {
             Token::Identifier("b".to_owned()),
             Token::Integer(456),
             Token::CloseParen,
-            Token::CloseParen
+            Token::CloseParen,
         ];
         let mut parser = Parser::new(tokens.into_iter().map(Ok));
 
@@ -184,10 +176,7 @@ mod tests {
             Value::List(vec![
                 Value::String("a".to_owned()),
                 Value::Integer(123),
-                Value::List(vec![
-                    Value::Symbol("b".to_owned()),
-                    Value::Integer(456),
-                ]),
+                Value::List(vec![Value::Symbol("b".to_owned()), Value::Integer(456)]),
             ]),
             parser.parse().unwrap()
         );
@@ -200,15 +189,12 @@ mod tests {
             Token::Integer(123),
             Token::Dot,
             Token::Integer(456),
-            Token::CloseParen
+            Token::CloseParen,
         ];
         let mut parser = Parser::new(tokens.into_iter().map(Ok));
 
         assert_eq!(
-            Value::DottedList(vec![
-                Value::Integer(123),
-                Value::Integer(456)
-            ]),
+            Value::DottedList(vec![Value::Integer(123), Value::Integer(456)]),
             parser.parse().unwrap()
         );
     }
@@ -231,7 +217,7 @@ mod tests {
             Token::Integer(4),
             Token::Integer(5),
             Token::Integer(6),
-            Token::CloseParen
+            Token::CloseParen,
         ];
         let mut parser = Parser::new(tokens.into_iter().map(Ok));
 
@@ -242,9 +228,9 @@ mod tests {
                     Value::DottedList(vec![
                         Value::Symbol("x".to_owned()),
                         Value::Symbol("y".to_owned()),
-                        Value::Symbol("z".to_owned())
+                        Value::Symbol("z".to_owned()),
                     ]),
-                    Value::Symbol("z".to_owned())
+                    Value::Symbol("z".to_owned()),
                 ]),
                 Value::Integer(3),
                 Value::Integer(4),
